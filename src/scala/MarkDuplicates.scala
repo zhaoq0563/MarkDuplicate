@@ -1,14 +1,14 @@
 ///////////////////////////////////////////////////////////////
 //***                                                     ***//
-//***   Mark Duplicate by using ADAM store structure      ***//
+//*** Mark Duplicate by using ADAM store structure        ***//
 //***                                                     ***//
-//***	Created by Qi @ Oct. 2015                         ***//
+//***	Created by Qi @ Oct. 2015                           ***//
 //***                                                     ***//
-//***	CS Department, UCLA                               ***//
+//***	CS Department, UCLA                                 ***//
 //***                                                     ***//
 ///////////////////////////////////////////////////////////////
 
-package scala;
+package scala
 
 //import picard.DuplicationMetrics;
 //import picard.markduplicates.util.AbstractMarkDuplicatesCommandLineProgram;
@@ -25,9 +25,9 @@ object MarkDuplicates{
     //var libraryIdGenerator = new LibraryIdGenerator
 
     def main(args:Array[String]) = {
-        var i = args(0)
-	var o = args(1)
-	println("Input is " + i)
-	println("Output is " + o)
+      var i = args(0)
+      var o = args(1)
+      println("Input is " + i)
+      println("Output is " + o)
     }
 }
