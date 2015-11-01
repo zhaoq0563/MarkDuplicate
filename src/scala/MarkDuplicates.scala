@@ -78,7 +78,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       fragSort = null
 
       println("*** Finish generating duplicate indexes! ***")
-      dupliateIndexes.doneAddingStartIteration()
+      duplicateIndexes.doneAddingStartIteration()
     }
 
     def areComparableForDuplicates(lhs : ReadEndsForMarkDuplicates, rhs : ReadEndsForMarkDuplicates, compareRead2 : Boolean) : Boolean = {
