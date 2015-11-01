@@ -14,14 +14,15 @@ import java.util
 
 import htsjdk.samtools.{util, SAMFileHeader}
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
-import picard.sam.markduplicates.util.{LibraryIdGenerator, ReadEndsForMarkDuplicates}
+import picard.sam.markduplicates.util.{AbstractMarkDuplicatesCommandLineProgram, LibraryIdGenerator, ReadEndsForMarkDuplicates}
 
-object MarkDuplicates{
+object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     var pairSort : SortingCollection[ReadEndsForMarkDuplicates]
     var fragSort : SortingCollection[ReadEndsForMarkDuplicates]
-    var dupliateIndexes = new SortingLongCollection()
-    //var libraryIdGenerator = new LibraryIdGenerator(SAMFileHeader)
+    var duplicateIndexes = new SortingLongCollection(100000)
+    var numDuplicateIndices : Int = 0
+    var libraryIdGenerator = null
 
     def transformRead(input : String) = {
       // Collect data from ADAM via Spark
@@ -35,14 +36,14 @@ object MarkDuplicates{
       // Generate the duplicate indexes for remove duplicate reads
       println("*** Start to generate duplicate indexes! ***")
 
-      var firstOfNextChunk: ReadEndsForMarkDuplicates = null
-      val nextChunk: java.util.List[ReadEndsForMarkDuplicates] = new java.util.ArrayList[ReadEndsForMarkDuplicates](200)
+      var firstOfNextChunk : ReadEndsForMarkDuplicates = null
+      val nextChunk = new java.util.ArrayList[ReadEndsForMarkDuplicates](200)
 
       for (next : ReadEndsForMarkDuplicates <- pairSort) {
         if (firstOfNextChunk == null) {
           firstOfNextChunk = next
           nextChunk.add(firstOfNextChunk)
-        } else if (areComparableForDuplicates(firstOfNextChunk, next, true)) {
+        } else if (areComparableForDuplicates(firstOfNextChunk, next, true : Boolean)) {
           nextChunk.add(next)
         } else {
           if (nextChunk.size() > 1) markDuplicatePairs(nextChunk)
@@ -59,7 +60,7 @@ object MarkDuplicates{
       var containsFrags : Boolean = false
 
       for (next : ReadEndsForMarkDuplicates <- fragSort) {
-        if (firstOfNextChunk != null && areComparableForDuplicates(firstOfNextChunk, next, false)) {
+        if (firstOfNextChunk != null && areComparableForDuplicates(firstOfNextChunk, next, false : Boolean)) {
           nextChunk.add(next)
           containsPairs = containsPairs || next.isPaired()
           containsFrags = containsFrags || !next.isPaired()
@@ -90,7 +91,60 @@ object MarkDuplicates{
       retval
     }
 
-    def writetoADAM(output : String) = {
+    def addIndexAsDuplicate(bamIndex : Long) = {
+      duplicateIndexes.add(bamIndex)
+      numDuplicateIndices += 1
+    }
+
+    def markDuplicatePairs(list : java.util.ArrayList[ReadEndsForMarkDuplicates]) = {
+      var maxScore : Short = 0
+      var best : ReadEndsForMarkDuplicates = null
+
+      /** All read ends should have orientation FF, FR, RF, or RR **/
+      for (end : ReadEndsForMarkDuplicates <- list) {
+        if (end.score > maxScore || best == null) {
+          maxScore = end.score
+          best = end
+        }
+      }
+
+      for (end : ReadEndsForMarkDuplicates <- list) {
+        if (end != best) {
+          addIndexAsDuplicate(end.read1IndexInFile)
+          addIndexAsDuplicate(end.read2IndexInFile)
+        }
+      }
+
+      // Null for libraryIdGenerator, need to figure out how to get SAM/BAM header
+      if (READ_NAME_REGEX != null) {
+        AbstractMarkDuplicatesCommandLineProgram.trackOpticalDuplicates(list, opticalDuplicateFinder, libraryIdGenerator)
+      }
+    }
+
+    def markDuplicateFragments(list : java.util.ArrayList[ReadEndsForMarkDuplicates], containsPairs : Boolean) = {
+      if (containsPairs) {
+        for (end : ReadEndsForMarkDuplicates <- list) {
+          if (!end.isPaired()) addIndexAsDuplicate(end.read1IndexInFile)
+        }
+      } else {
+        var maxScore : Short = 0
+        var best : ReadEndsForMarkDuplicates = null
+        for (end : ReadEndsForMarkDuplicates <- list) {
+          if (end.score > maxScore || best == null) {
+            maxScore = end.score
+            best = end
+          }
+        }
+
+        for (end : ReadEndsForMarkDuplicates <- list) {
+          if (end != best) {
+            addIndexAsDuplicate(end.read1IndexInFile);
+          }
+        }
+      }
+    }
+
+  def writetoADAM(output : String) = {
       // Write results to ADAM file on HDFS
       println("write to ADAM file")
 
