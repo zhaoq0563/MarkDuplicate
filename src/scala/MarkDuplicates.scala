@@ -19,7 +19,7 @@ import picard.sam.markduplicates.util.{LibraryIdGenerator, ReadEndsForMarkDuplic
 object MarkDuplicates{
 
     var pairSort : SortingCollection[ReadEndsForMarkDuplicates]
-    //var fragSort = new SortingCollection[ReadEndsForMarkDuplicates]
+    var fragSort : SortingCollection[ReadEndsForMarkDuplicates]
     var dupliateIndexes = new SortingLongCollection()
     //var libraryIdGenerator = new LibraryIdGenerator(SAMFileHeader)
 
@@ -33,12 +33,12 @@ object MarkDuplicates{
 
     def generateDupIndexes() = {
       // Generate the duplicate indexes for remove duplicate reads
-      println("Start to generate duplicate indexes")
+      println("*** Start to generate duplicate indexes! ***")
 
       var firstOfNextChunk: ReadEndsForMarkDuplicates = null
-      var nextChunk: java.util.List[ReadEndsForMarkDuplicates] = new java.util.ArrayList[ReadEndsForMarkDuplicates](200)
+      val nextChunk: java.util.List[ReadEndsForMarkDuplicates] = new java.util.ArrayList[ReadEndsForMarkDuplicates](200)
 
-      for (next <- pairSort) {
+      for (next : ReadEndsForMarkDuplicates <- pairSort) {
         if (firstOfNextChunk == null) {
           firstOfNextChunk = next
           nextChunk.add(firstOfNextChunk)
@@ -51,7 +51,43 @@ object MarkDuplicates{
           firstOfNextChunk = next
         }
       }
+      if (nextChunk.size() > 1) markDuplicatePairs(nextChunk)
+      pairSort.cleanup()
+      pairSort = null
 
+      var containsPairs : Boolean = false
+      var containsFrags : Boolean = false
+
+      for (next : ReadEndsForMarkDuplicates <- fragSort) {
+        if (firstOfNextChunk != null && areComparableForDuplicates(firstOfNextChunk, next, false)) {
+          nextChunk.add(next)
+          containsPairs = containsPairs || next.isPaired()
+          containsFrags = containsFrags || !next.isPaired()
+        } else {
+          if (nextChunk.size() > 1 && containsFrags) markDuplicateFragments(nextChunk, containsPairs)
+          nextChunk.clear()
+          nextChunk.add(next)
+          firstOfNextChunk = next
+          containsPairs = next.isPaired()
+          containsFrags = !next.isPaired()
+        }
+      }
+      markDuplicateFragments(nextChunk, containsPairs)
+      fragSort.cleanup()
+      fragSort = null
+
+      println("*** Finish generating duplicate indexes! ***")
+      dupliateIndexes.doneAddingStartIteration()
+    }
+
+    def areComparableForDuplicates(lhs : ReadEndsForMarkDuplicates, rhs : ReadEndsForMarkDuplicates, compareRead2 : Boolean) : Boolean = {
+      var retval: Boolean = (lhs.libraryId == rhs.libraryId) && (lhs.read1ReferenceIndex == rhs.read1ReferenceIndex) && (lhs.read1Coordinate == rhs.read1Coordinate) && (lhs.orientation == rhs.orientation)
+
+      if (retval && compareRead2) {
+        retval = (lhs.read2ReferenceIndex == rhs.read2ReferenceIndex) && (lhs.read2Coordinate == rhs.read2Coordinate)
+      }
+
+      retval
     }
 
     def writetoADAM(output : String) = {
