@@ -10,29 +10,71 @@
 
 package scala
 
-import htsjdk.samtools.SAMFileHeader
+import java.util
+
+import htsjdk.samtools.{util, SAMFileHeader}
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
 import picard.sam.markduplicates.util.{LibraryIdGenerator, ReadEndsForMarkDuplicates}
 
-//import picard.DuplicationMetrics;
-//import picard.markduplicates.util.AbstractMarkDuplicatesCommandLineProgram;
-//import picard.markduplicates.util.LibraryIdGenerator;
-//import picard.markduplicates.util.ReadEnds;
-//import picard.markduplicates.util.ReadEndsForMarkDuplicates;
-//import picard.markduplicates.util.ReadEndsForMarkDuplicatesCodec;
+object MarkDuplicates{
 
-//object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
-class MarkDuplicates{
+    var pairSort : SortingCollection[ReadEndsForMarkDuplicates]
+    //var fragSort = new SortingCollection[ReadEndsForMarkDuplicates]
+    var dupliateIndexes = new SortingLongCollection()
+    //var libraryIdGenerator = new LibraryIdGenerator(SAMFileHeader)
 
-    var pairSort = new SortingCollection[ReadEndsForMarkDuplicates]
-    var fragSort = new SortingCollection[ReadEndsForMarkDuplicates]
-    var dupliateIndexes = new SortingLongCollection(1000000000)
-    var libraryIdGenerator = new LibraryIdGenerator(SAMFileHeader)
+    def transformRead(input : String) = {
+      // Collect data from ADAM via Spark
+      println("transform reads")
 
-    def main(args:Array[String]) = {
-      var i = args(0)
-      var o = args(1)
-      println("Input is " + i)
-      println("Output is " + o)
+      // Iterate the data and transform into new variables
+
+    }
+
+    def generateDupIndexes() = {
+      // Generate the duplicate indexes for remove duplicate reads
+      println("Start to generate duplicate indexes")
+
+      var firstOfNextChunk: ReadEndsForMarkDuplicates = null
+      var nextChunk: java.util.List[ReadEndsForMarkDuplicates] = new java.util.ArrayList[ReadEndsForMarkDuplicates](200)
+
+      for (next <- pairSort) {
+        if (firstOfNextChunk == null) {
+          firstOfNextChunk = next
+          nextChunk.add(firstOfNextChunk)
+        } else if (areComparableForDuplicates(firstOfNextChunk, next, true)) {
+          nextChunk.add(next)
+        } else {
+          if (nextChunk.size() > 1) markDuplicatePairs(nextChunk)
+          nextChunk.clear()
+          nextChunk.add(next)
+          firstOfNextChunk = next
+        }
+      }
+
+    }
+
+    def writetoADAM(output : String) = {
+      // Write results to ADAM file on HDFS
+      println("write to ADAM file")
+
+    }
+
+    def main(args : Array[String]) = {
+      var input = args(0)
+      var output = args(1)
+      println("The input ADAM file:  " + input)
+      println("The output ADAM file: " + output)
+
+      val t0 = System.nanoTime : Double
+
+      transformRead(input)
+      generateDupIndexes()
+      writetoADAM(output)
+
+      val t1 = System.nanoTime() : Double
+
+      println("Mark duplicate has been successfully done!")
+      println("The total time for Mark Duplicate is " + (t1-t0) / 1000000000.0 + "secs.")
     }
 }
