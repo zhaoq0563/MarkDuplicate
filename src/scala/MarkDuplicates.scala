@@ -14,19 +14,24 @@ import java.util
 
 import htsjdk.samtools.{util, SAMFileHeader}
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
-import picard.sam.markduplicates.util.{AbstractMarkDuplicatesCommandLineProgram, LibraryIdGenerator, ReadEndsForMarkDuplicates}
+import picard.sam.markduplicates.util.{ReadEndsForMarkDuplicatesCodec, AbstractMarkDuplicatesCommandLineProgram, LibraryIdGenerator, ReadEndsForMarkDuplicates}
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
-    var pairSort : SortingCollection[ReadEndsForMarkDuplicates]
-    var fragSort : SortingCollection[ReadEndsForMarkDuplicates]
+    var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates]
+    var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = ()
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
     var libraryIdGenerator = null
 
+    override def doWork() : Int = {
+      var finish : Int = 0
+      finish
+    }
+
     def transformRead(input : String) = {
       // Collect data from ADAM via Spark
-      println("transform reads")
+      println("Start to process the ADAM file to collect the information of all the reads into variables!")
 
       // Iterate the data and transform into new variables
 
@@ -138,7 +143,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
         for (end : ReadEndsForMarkDuplicates <- list) {
           if (end != best) {
-            addIndexAsDuplicate(end.read1IndexInFile);
+            addIndexAsDuplicate(end.read1IndexInFile)
           }
         }
       }
