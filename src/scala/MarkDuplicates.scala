@@ -12,7 +12,7 @@ package scala
 
 import java.util
 
-import htsjdk.samtools.{util, SAMFileHeader}
+import htsjdk.samtools.{SAMRecord, util, SAMFileHeader}
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
 import picard.sam.markduplicates.util.{ReadEndsForMarkDuplicatesCodec, AbstractMarkDuplicatesCommandLineProgram, LibraryIdGenerator, ReadEndsForMarkDuplicates}
 
@@ -35,6 +35,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       // Iterate the data and transform into new variables
 
+    }
+
+    def buildReadEnds(header : SAMFileHeader, index : Long, rec : SAMRecord) = {
+      // Build the ReadEnd for each read in ADAM
     }
 
     def generateDupIndexes() = {
