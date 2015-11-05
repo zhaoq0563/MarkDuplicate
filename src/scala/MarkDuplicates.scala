@@ -33,6 +33,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // Collect data from ADAM via Spark
       println("Start to process the ADAM file to collect the information of all the reads into variables!")
 
+      val conf = new SparkConf().setAppName(appName).setMaster(master)
+      new SparkContext(conf)
       // Iterate the data and transform into new variables
 
     }
