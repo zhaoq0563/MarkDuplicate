@@ -14,6 +14,7 @@ import java.util
 
 import htsjdk.samtools.{SAMRecord, util, SAMFileHeader}
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
+import org.apache.spark.{SparkContext, SparkConf}
 import picard.sam.markduplicates.util.{ReadEndsForMarkDuplicatesCodec, AbstractMarkDuplicatesCommandLineProgram, LibraryIdGenerator, ReadEndsForMarkDuplicates}
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
@@ -33,7 +34,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // Collect data from ADAM via Spark
       println("Start to process the ADAM file to collect the information of all the reads into variables!")
 
-      val conf = new SparkConf().setAppName(appName).setMaster(master)
+      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
       new SparkContext(conf)
       // Iterate the data and transform into new variables
 
