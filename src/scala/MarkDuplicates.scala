@@ -16,6 +16,7 @@ import htsjdk.samtools.{SAMRecord, util, SAMFileHeader}
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
+import org.bdgenomics.adam.rdd.ADAMContext
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util.{ReadEndsForMarkDuplicatesCodec, AbstractMarkDuplicatesCommandLineProgram, LibraryIdGenerator, ReadEndsForMarkDuplicates}
 
@@ -37,8 +38,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("Start to process the ADAM file to collect the information of all the reads into variables!")
 
       val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
-      var sc = new SparkContext(conf)
-      var readsrdd : RDD[AlignmentRecord] = sc.textFile(input)
+      var sc = new ADAMContext(new SparkContext(conf))
+      var readsrdd : RDD[AlignmentRecord] = sc.loadAlignmentsFromPaths()
       // Iterate the data and transform into new variables
 
     }
