@@ -12,7 +12,9 @@ package scala
 
 import java.util
 
-import htsjdk.samtools.{SAMRecord, util, SAMFileHeader}
+import scala.util.control.Breaks.break
+
+import htsjdk.samtools._
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
@@ -20,15 +22,14 @@ import org.bdgenomics.adam.converters.AlignmentRecordConverter
 import org.bdgenomics.adam.models.SAMFileHeaderWritable
 import org.bdgenomics.adam.rdd.ADAMContext
 import org.bdgenomics.formats.avro.AlignmentRecord
-import picard.sam.markduplicates.util.{ReadEndsForMarkDuplicatesCodec, AbstractMarkDuplicatesCommandLineProgram, LibraryIdGenerator, ReadEndsForMarkDuplicates}
+import picard.sam.markduplicates.util._
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates]
-    var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = ()
+    var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates]
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
-    var libraryIdGenerator = null
 
     override def doWork() : Int = {
       var finish : Int = 0
@@ -37,24 +38,88 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     def transformRead(input : String) = {
       // Collect data from ADAM via Spark
-      println("Start to process the ADAM file to collect the information of all the reads into variables!")
+      println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
       val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
       val sc = new ADAMContext(new SparkContext(conf))
-      var readsrdd : RDD[AlignmentRecord] = sc.loadAlignments(input)
+      var readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
+
+      var header: SAMFileHeader
+      var libraryIdGenerator = new LibraryIdGenerator(header)
+      var tmp : java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
+      var index : Long = 0
 
       // Iterate the data and transform into new variables
+      for (rec : AlignmentRecord <- readsrdd.collect()) {
+        if (rec.getReadMapped) {
+          if (rec.getContig.getReferenceIndex == -1)
+            break()
+      } else if (!rec.getSecondaryAlignment && !rec.getSupplementaryAlignment) {
+          var fragmentEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
+          fragSort.add(fragmentEnd)
+
+          if (rec.getReadPaired && rec.getMateMapped) {
+            var checkpair : AlignmentRecord = findSecondRead(tmp, rec.getContig.getReferenceIndex, rec.getReadName)
+            if (checkpair == null) {
+              var pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
+              tmp.add(rec)
+            } else {
+              var sequence : Int = fragmentEnd.read1IndexInFile.asInstanceOf[Int]
+              var coordinate : Int = fragmentEnd.read1Coordinate
+
+              if
+            }
+          }
+        }
+      }
 
     }
-
-    def buildReadEnds(header : SAMFileHeader, index : Long, rec : AlignmentRecord) : ReadEndsForMarkDuplicates = {
+    def buildReadEnds(header : SAMFileHeader, index : Long, rec : AlignmentRecord, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
       // Build the ReadEnd for each read in ADAM
-      var ends : ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
-      var recSAM : SAMRecord = new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header))
+      val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
+      val recSAM: SAMRecord = new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header))
 
-      ends.read1IndexInFile = recSAM.getReferenceIndex().asInstanceOf[Long]
+      ends.read1ReferenceIndex = recSAM.getReferenceIndex
+      if (recSAM.getReadNegativeStrandFlag) {
+        ends.read1Coordinate = recSAM.getUnclippedEnd
+        ends.orientation = ReadEnds.R
+      }
+      else {
+        ends.read1Coordinate = recSAM.getUnclippedStart
+        ends.orientation = ReadEnds.F
+      }
+      ends.read1IndexInFile = index
+      ends.score = DuplicateScoringStrategy.computeDuplicateScore(recSAM, DUPLICATE_SCORING_STRATEGY)
+
+      if (recSAM.getReadPairedFlag && !recSAM.getMateUnmappedFlag)
+        ends.read2ReferenceIndex = recSAM.getMateReferenceIndex.asInstanceOf[Int]
+
+      ends.libraryId = libraryIdGenerator.getLibraryId(recSAM)
+
+      if (opticalDuplicateFinder.addLocationInformation(recSAM.getReadName, ends)) {
+        // calculate the RG number (nth in list)
+        ends.readGroup = 0
+        val rg: String = recSAM.getAttribute("RG").toString
+        val readGroups: java.util.List[SAMReadGroupRecord] = header.getReadGroups
+
+        if (rg != null && readGroups != null) {
+          for (readGroup :SAMReadGroupRecord <- readGroups) {
+            if (readGroup.getReadGroupId.equals(rg))
+              break()
+            else ends.readGroup+=1
+          }
+        }
+      }
 
       ends
+    }
+
+    def findSecondRead (tmp : java.util.ArrayList[AlignmentRecord], referindex : Integer, readname : String) : AlignmentRecord = {
+      for (target : AlignmentRecord <- tmp) {
+        if (target.getContig.getReferenceIndex == referindex && target.getReadName == readname)
+          target
+      }
+      null
     }
 
     def generateDupIndexes() = {
