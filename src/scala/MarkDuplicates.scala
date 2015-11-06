@@ -16,6 +16,8 @@ import htsjdk.samtools.{SAMRecord, util, SAMFileHeader}
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
+import org.bdgenomics.adam.converters.AlignmentRecordConverter
+import org.bdgenomics.adam.models.SAMFileHeaderWritable
 import org.bdgenomics.adam.rdd.ADAMContext
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util.{ReadEndsForMarkDuplicatesCodec, AbstractMarkDuplicatesCommandLineProgram, LibraryIdGenerator, ReadEndsForMarkDuplicates}
@@ -38,14 +40,21 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("Start to process the ADAM file to collect the information of all the reads into variables!")
 
       val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
-      var sc = new ADAMContext(new SparkContext(conf))
-      var readsrdd : RDD[AlignmentRecord] = sc.loadAlignmentsFromPaths()
+      val sc = new ADAMContext(new SparkContext(conf))
+      var readsrdd : RDD[AlignmentRecord] = sc.loadAlignments(input)
+
       // Iterate the data and transform into new variables
 
     }
 
-    def buildReadEnds(header : SAMFileHeader, index : Long, rec : SAMRecord) = {
+    def buildReadEnds(header : SAMFileHeader, index : Long, rec : AlignmentRecord) : ReadEndsForMarkDuplicates = {
       // Build the ReadEnd for each read in ADAM
+      var ends : ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
+      var recSAM : SAMRecord = new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header))
+
+      ends.read1IndexInFile = recSAM.getReferenceIndex().asInstanceOf[Long]
+
+      ends
     }
 
     def generateDupIndexes() = {
