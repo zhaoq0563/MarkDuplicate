@@ -54,7 +54,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         if (rec.getReadMapped) {
           if (rec.getContig.getReferenceIndex == -1)
             break()
-      } else if (!rec.getSecondaryAlignment && !rec.getSupplementaryAlignment) {
+        } else if (!rec.getSecondaryAlignment && !rec.getSupplementaryAlignment) {
           var fragmentEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
           fragSort.add(fragmentEnd)
 
@@ -68,7 +68,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
               var coordinate : Int = fragmentEnd.read1Coordinate
               var pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
 
-              if (rec.get) {
+              if (rec.getFirstOfPair) {
                 pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(Boolean2boolean(rec.getReadNegativeStrand), pairedEnd.orientation == ReadEnds.R)
               } else {
                 pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, Boolean2boolean(rec.getReadNegativeStrand))
@@ -88,12 +88,18 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
                 pairedEnd.read1IndexInFile = index
                 pairedEnd.orientation = ReadEnds.getOrientationByte(rec.getReadNegativeStrand, pairedEnd.orientation == ReadEnds.R)
               }
+
+              pairedEnd.score += DuplicateScoringStrategy.computeDuplicateScore(new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header)), DUPLICATE_SCORING_STRATEGY)
+              pairSort.add(pairedEnd)
             }
           }
         }
+        index += 1
       }
-
+      pairSort.doneAdding()
+      fragSort.doneAdding()
     }
+
     def buildReadEnds(header : SAMFileHeader, index : Long, rec : AlignmentRecord, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
       // Build the ReadEnd for each read in ADAM
       val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
