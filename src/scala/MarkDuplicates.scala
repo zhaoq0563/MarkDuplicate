@@ -105,7 +105,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
       val recSAM: SAMRecord = new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header))
 
-      ends.read1ReferenceIndex = recSAM.getReferenceIndex
+      ends.read1ReferenceIndex = Integer2int(recSAM.getReferenceIndex)
       if (recSAM.getReadNegativeStrandFlag) {
         ends.read1Coordinate = recSAM.getUnclippedEnd
         ends.orientation = ReadEnds.R
@@ -141,6 +141,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     def findSecondRead (tmp : java.util.ArrayList[AlignmentRecord], referindex : Integer, readname : String) : AlignmentRecord = {
+      // Find out the paired read that was already been processed but did not find their mate
+      // Return the read or return null if no finding
       for (target : AlignmentRecord <- tmp) {
         if (target.getContig.getReferenceIndex == referindex && target.getReadName == readname)
           target
