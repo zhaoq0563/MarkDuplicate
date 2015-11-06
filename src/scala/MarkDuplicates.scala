@@ -66,8 +66,28 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             } else {
               var sequence : Int = fragmentEnd.read1IndexInFile.asInstanceOf[Int]
               var coordinate : Int = fragmentEnd.read1Coordinate
+              var pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
 
-              if
+              if (rec.get) {
+                pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(Boolean2boolean(rec.getReadNegativeStrand), pairedEnd.orientation == ReadEnds.R)
+              } else {
+                pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, Boolean2boolean(rec.getReadNegativeStrand))
+              }
+
+              if (sequence > pairedEnd.read1ReferenceIndex || (sequence == pairedEnd.read1ReferenceIndex && coordinate >= pairedEnd.read1Coordinate)) {
+                pairedEnd.read2ReferenceIndex = sequence
+                pairedEnd.read2Coordinate = coordinate
+                pairedEnd.read2IndexInFile = index
+                pairedEnd.orientation = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, rec.getReadNegativeStrand)
+              } else {
+                pairedEnd.read2ReferenceIndex = pairedEnd.read1ReferenceIndex
+                pairedEnd.read2Coordinate = pairedEnd.read1Coordinate
+                pairedEnd.read2IndexInFile = pairedEnd.read1IndexInFile
+                pairedEnd.read1ReferenceIndex = sequence
+                pairedEnd.read1Coordinate = coordinate
+                pairedEnd.read1IndexInFile = index
+                pairedEnd.orientation = ReadEnds.getOrientationByte(rec.getReadNegativeStrand, pairedEnd.orientation == ReadEnds.R)
+              }
             }
           }
         }
