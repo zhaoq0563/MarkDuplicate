@@ -44,7 +44,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val sc = new ADAMContext(new SparkContext(conf))
       var readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
 
-      var header: SAMFileHeader
+      // Need to figure out how to get the header for building (pair/frag)Sort?????
+      var header : SAMFileHeader
       var libraryIdGenerator = new LibraryIdGenerator(header)
       var tmp : java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
       var index : Long = 0
@@ -68,6 +69,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
               var coordinate : Int = fragmentEnd.read1Coordinate
               var pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
 
+              // Why this function has been removed??????
               if (rec.getFirstOfPair) {
                 pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(Boolean2boolean(rec.getReadNegativeStrand), pairedEnd.orientation == ReadEnds.R)
               } else {
@@ -98,6 +100,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
       pairSort.doneAdding()
       fragSort.doneAdding()
+
+      println("*** Finish building pairSort and fragSort! ***")
     }
 
     def buildReadEnds(header : SAMFileHeader, index : Long, rec : AlignmentRecord, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
@@ -180,15 +184,15 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       for (next : ReadEndsForMarkDuplicates <- fragSort) {
         if (firstOfNextChunk != null && areComparableForDuplicates(firstOfNextChunk, next, false : Boolean)) {
           nextChunk.add(next)
-          containsPairs = containsPairs || next.isPaired()
-          containsFrags = containsFrags || !next.isPaired()
+          containsPairs = containsPairs || next.isPaired
+          containsFrags = containsFrags || !next.isPaired
         } else {
           if (nextChunk.size() > 1 && containsFrags) markDuplicateFragments(nextChunk, containsPairs)
           nextChunk.clear()
           nextChunk.add(next)
           firstOfNextChunk = next
-          containsPairs = next.isPaired()
-          containsFrags = !next.isPaired()
+          containsPairs = next.isPaired
+          containsFrags = !next.isPaired
         }
       }
       markDuplicateFragments(nextChunk, containsPairs)
@@ -242,7 +246,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def markDuplicateFragments(list : java.util.ArrayList[ReadEndsForMarkDuplicates], containsPairs : Boolean) = {
       if (containsPairs) {
         for (end : ReadEndsForMarkDuplicates <- list) {
-          if (!end.isPaired()) addIndexAsDuplicate(end.read1IndexInFile)
+          if (!end.isPaired) addIndexAsDuplicate(end.read1IndexInFile)
         }
       } else {
         var maxScore : Short = 0
@@ -262,27 +266,31 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
     }
 
-  def writetoADAM(output : String) = {
+  def writetoADAM(input : String, output : String) = {
       // Write results to ADAM file on HDFS
-      println("write to ADAM file")
+      println("*** Start to write reads back to ADAM file without duplicates! ***")
+
+      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
+      val sc = new ADAMContext(new SparkContext(conf))
+      var readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
 
     }
 
     def main(args : Array[String]) = {
-      var input = args(0)
-      var output = args(1)
-      println("The input ADAM file:  " + input)
-      println("The output ADAM file: " + output)
+      val input = args(0)
+      val output = args(1)
+      println("*** The input ADAM file‘s directory:  " + input)
+      println("*** The output ADAM file‘s directory: " + output)
 
       val t0 = System.nanoTime : Double
 
       transformRead(input)
       generateDupIndexes()
-      writetoADAM(output)
+      writetoADAM(input, output)
 
       val t1 = System.nanoTime() : Double
 
-      println("Mark duplicate has been successfully done!")
-      println("The total time for Mark Duplicate is " + (t1-t0) / 1000000000.0 + "secs.")
+      println("*** Mark duplicate has been successfully done! ***")
+      println("*** The total time for Mark Duplicate is : " + (t1-t0) / 1000000000.0 + "secs.")
     }
 }
