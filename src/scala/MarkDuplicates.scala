@@ -30,19 +30,19 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates]
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
+    val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
+    val sc = new ADAMContext(new SparkContext(conf))
 
     override def doWork() : Int = {
       var finish : Int = 0
       finish
     }
 
-    def transformRead(input : String) = {
+    def transformRead(input : String, readsrdd : RDD[AlignmentRecord]) = {
       // Collect data from ADAM via Spark
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
-      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
-      val sc = new ADAMContext(new SparkContext(conf))
-      var readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
+
 
       // Need to figure out how to get the header for building (pair/frag)Sort?????
       var header : SAMFileHeader
@@ -266,13 +266,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
     }
 
-  def writetoADAM(input : String, output : String) = {
+  def writetoADAM(output : String, readsrdd : RDD[AlignmentRecord]) = {
       // Write results to ADAM file on HDFS
       println("*** Start to write reads back to ADAM file without duplicates! ***")
 
-      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
-      val sc = new ADAMContext(new SparkContext(conf))
-      var readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
+
 
     }
 
@@ -284,9 +282,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val t0 = System.nanoTime : Double
 
-      transformRead(input)
+      val readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
+
+      transformRead(input, readsrdd)
       generateDupIndexes()
-      writetoADAM(input, output)
+      writetoADAM(output, readsrdd)
 
       val t1 = System.nanoTime() : Double
 
