@@ -30,8 +30,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates]
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
-    val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
-    val sc = new ADAMContext(new SparkContext(conf))
 
     override def doWork() : Int = {
       var finish : Int = 0
@@ -41,8 +39,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def transformRead(input : String, readsrdd : RDD[AlignmentRecord]) = {
       // Collect data from ADAM via Spark
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
-
-
 
       // Need to figure out how to get the header for building (pair/frag)Sort?????
       var header : SAMFileHeader
@@ -266,9 +262,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
     }
 
-  def writetoADAM(output : String, readsrdd : RDD[AlignmentRecord]) = {
+    def writetoADAM(output : String, readsrdd : RDD[AlignmentRecord]) = {
       // Write results to ADAM file on HDFS
       println("*** Start to write reads back to ADAM file without duplicates! ***")
+
 
 
 
@@ -282,6 +279,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val t0 = System.nanoTime : Double
 
+      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
+      val sc = new ADAMContext(new SparkContext(conf))
       val readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
 
       transformRead(input, readsrdd)
