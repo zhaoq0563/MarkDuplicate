@@ -266,9 +266,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // Write results to ADAM file on HDFS
       println("*** Start to write reads back to ADAM file without duplicates! ***")
 
-
-
-
+      readsrdd.filter(AlignmentRecord => AlignmentRecord.getDuplicateRead.eq(false)).saveAsTextFile(output)
     }
 
     def main(args : Array[String]) = {
