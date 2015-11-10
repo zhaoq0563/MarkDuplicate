@@ -266,7 +266,30 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // Write results to ADAM file on HDFS
       println("*** Start to write reads back to ADAM file without duplicates! ***")
 
-      readsrdd.filter(AlignmentRecord => AlignmentRecord.getDuplicateRead.eq(false)).saveAsTextFile(output)
+      var indexInFile : Long = 0
+      var nextDuplicateIndex : Long = 0
+      if (duplicateIndexes.hasNext) {
+        nextDuplicateIndex = duplicateIndexes.next()
+      } else {
+        nextDuplicateIndex = -1
+      }
+
+      for (read <- readsrdd.collect()) {
+        if (indexInFile == nextDuplicateIndex) {
+          read.setDuplicateRead(true)
+          if (duplicateIndexes.hasNext) {
+            nextDuplicateIndex = duplicateIndexes.next()
+          } else {
+            nextDuplicateIndex = -1
+          }
+        } else {
+          read.setDuplicateRead(false)
+        }
+        indexInFile += 1
+      }
+
+      // Use the filter function to get rid of those reads contains indexes in the duplicateIndexes
+      readsrdd.filter(read => read.getDuplicateRead.eq(false)).saveAsTextFile(output)
     }
 
     def main(args : Array[String]) = {
