@@ -295,10 +295,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     def main(args : Array[String]) = {
       val input = args(0)
-      val input = args(0)
       val output = args(1)
-      println("*** The input ADAM file‘s directory:  " + input)
-      println("*** The output ADAM file‘s directory: " + output)
+      val headerinput = args(2)
+      println("*** The directory of input ADAM file             : " + input)
+      println("*** The directory of output ADAM file            : " + output)
+      println("*** The directory of input Fasta file for header : " + headerinput)
 
       val t0 = System.nanoTime : Double
 
