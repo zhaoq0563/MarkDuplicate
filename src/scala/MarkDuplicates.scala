@@ -66,11 +66,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
               var pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
 
               // Why this function has been removed?????? = does not matter
-              if (rec.getFirstOfPair) {
+              //if (rec.getFirstOfPair) {
                 pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(Boolean2boolean(rec.getReadNegativeStrand), pairedEnd.orientation == ReadEnds.R)
-              } else {
-                pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, Boolean2boolean(rec.getReadNegativeStrand))
-              }
+              //} else {
+              //  pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, Boolean2boolean(rec.getReadNegativeStrand))
+              //}
 
               if (sequence > pairedEnd.read1ReferenceIndex || (sequence == pairedEnd.read1ReferenceIndex && coordinate >= pairedEnd.read1Coordinate)) {
                 pairedEnd.read2ReferenceIndex = sequence
