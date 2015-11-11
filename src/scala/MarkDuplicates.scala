@@ -19,8 +19,8 @@ import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
-import org.bdgenomics.adam.models.SAMFileHeaderWritable
-import org.bdgenomics.adam.rdd.ADAMContext
+import org.bdgenomics.adam.models.{SequenceDictionary, SAMFileHeaderWritable}
+import org.bdgenomics.adam.rdd.{ADAMSpecificRecordSequenceDictionaryRDDAggregator, ADAMSequenceDictionaryRDDAggregator, ADAMContext, ADAMRDDFunctions}
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
 
@@ -41,6 +41,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
       // Need to figure out how to get the header for building (pair/frag)Sort?????
+      var sd : SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsrdd).adamGetSequenceDictionary(false)
       var header : SAMFileHeader
       var libraryIdGenerator = new LibraryIdGenerator(header)
       var tmp : java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
@@ -67,7 +68,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
               // Why this function has been removed?????? = does not matter
               //if (rec.getFirstOfPair) {
-                pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(Boolean2boolean(rec.getReadNegativeStrand), pairedEnd.orientation == ReadEnds.R)
+              pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(Boolean2boolean(rec.getReadNegativeStrand), pairedEnd.orientation == ReadEnds.R)
               //} else {
               //  pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, Boolean2boolean(rec.getReadNegativeStrand))
               //}
@@ -290,7 +291,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
 
       // Use the filter function to get rid of those reads contains indexes in the duplicateIndexes
-      readsrdd.filter(read => read.getDuplicateRead.eq(false)).adamParquertSave(output)
+      readsrdd.filter(read => read.getDuplicateRead.eq(false)).adamParquetSave(output)
     }
 
     def main(args : Array[String]) = {
