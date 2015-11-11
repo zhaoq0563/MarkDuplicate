@@ -12,6 +12,8 @@ package scala
 
 import java.util
 
+import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
+
 import scala.util.control.Breaks.break
 
 import htsjdk.samtools._
@@ -19,7 +21,7 @@ import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
-import org.bdgenomics.adam.models.{SequenceDictionary, SAMFileHeaderWritable}
+import org.bdgenomics.adam.models.{RecordGroupDictionary, SequenceDictionary, SAMFileHeaderWritable}
 import org.bdgenomics.adam.rdd.{ADAMSpecificRecordSequenceDictionaryRDDAggregator, ADAMSequenceDictionaryRDDAggregator, ADAMContext, ADAMRDDFunctions}
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
@@ -41,10 +43,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
       // Need to figure out how to get the header for building (pair/frag)Sort?????
-      var sd : SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsrdd).adamGetSequenceDictionary(false)
-      var header : SAMFileHeader
-      var libraryIdGenerator = new LibraryIdGenerator(header)
-      var tmp : java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
+      val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsrdd).adamGetSequenceDictionary(false)
+      val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsrdd).adamGetReadGroupDictionary()
+      val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
+      val libraryIdGenerator = new LibraryIdGenerator(header)
+      val tmp: java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
       var index : Long = 0
 
       // Iterate the data and transform into new variables
