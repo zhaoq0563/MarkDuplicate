@@ -65,7 +65,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
               var coordinate : Int = fragmentEnd.read1Coordinate
               var pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
 
-              // Why this function has been removed??????
+              // Why this function has been removed?????? = does not matter
               if (rec.getFirstOfPair) {
                 pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(Boolean2boolean(rec.getReadNegativeStrand), pairedEnd.orientation == ReadEnds.R)
               } else {
@@ -274,6 +274,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         nextDuplicateIndex = -1
       }
 
+      // broadcast(list)    hash_tbl    record.field in hash_tbl
       for (read <- readsrdd.collect()) {
         if (indexInFile == nextDuplicateIndex) {
           read.setDuplicateRead(true)
@@ -289,10 +290,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
 
       // Use the filter function to get rid of those reads contains indexes in the duplicateIndexes
-      readsrdd.filter(read => read.getDuplicateRead.eq(false)).saveAsTextFile(output)
+      readsrdd.filter(read => read.getDuplicateRead.eq(false)).adamParquertSave(output)
     }
 
     def main(args : Array[String]) = {
+      val input = args(0)
       val input = args(0)
       val output = args(1)
       println("*** The input ADAM file‘s directory:  " + input)
