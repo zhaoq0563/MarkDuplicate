@@ -37,12 +37,36 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       finish
     }
 
+    def buildFragSort(rec : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
+      if (rec.getReadMapped == false) {
+        if (rec.getContig.getReferenceIndex == -1)
+          null
+      } else if (!rec.getSecondaryAlignment && !rec.getSupplementaryAlignment) {
+        var fragmentEnd: ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
+        fragmentEnd
+      }
+      null
+    }
+
+    def buildPairSort(rec : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
+
+    }
+
     def transformRead(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) = {
       // Collect data from ADAM via Spark
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
       val tmp: java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
       var index : Long = 0
+
+      val readADAMRDD = readsrdd.zipWithIndex()
+      readADAMRDD.map{case (read : AlignmentRecord, index : Long) => {
+        val fragmentEnd = buildFragSort(read, index, header, libraryIdGenerator)
+
+        (fragmentEnd, pairedEnd)
+      }}
+
+
 
       // Iterate the data and transform into new variables
       for (rec : AlignmentRecord <- readsrdd.collect()) {
