@@ -107,7 +107,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val readADAMRDD = readsrdd.zipWithIndex()
       readADAMRDD.map{case (read : AlignmentRecord, index : Long) => {
         val fragmentEnd = buildFragSort(read, index, header, libraryIdGenerator)
-
+        val pairedEnd = buildPairSort(read, index, header, libraryIdGenerator)
         (fragmentEnd, pairedEnd)
       }}
 
@@ -123,7 +123,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           fragSort.add(fragmentEnd)
 
           if (rec.getReadPaired && rec.getMateMapped) {
-            var checkpair : AlignmentRecord = findSecondRead(tmp, rec.getContig.getReferenceIndex, rec.getReadName)
+            val checkpair : AlignmentRecord = findSecondRead(tmp, rec.getContig.getReferenceIndex, rec.getReadName)
             if (checkpair == null) {
               var pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
               tmp.add(rec)
