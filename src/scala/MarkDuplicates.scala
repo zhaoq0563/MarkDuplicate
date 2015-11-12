@@ -104,15 +104,24 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val tmp: java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
       var index : Long = 0
 
-      val readADAMRDD = readsrdd.zipWithIndex()
-      readADAMRDD.map{case (read : AlignmentRecord, index : Long) => {
+      val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         val fragmentEnd = buildFragSort(read, index, header, libraryIdGenerator)
         val pairedEnd = buildPairSort(read, index, header, libraryIdGenerator)
         (fragmentEnd, pairedEnd)
       }}
 
+      for (readFrag <- readADAMRDD.map{case (fragmentEnd : ReadEndsForMarkDuplicates, pairedEnd : ReadEndsForMarkDuplicates) => fragmentEnd }.filter(fragmentEnd => !fragmentEnd.eq(null)).collect()){
+        fragSort.add(readFrag)
+      }
+      fragSort.doneAdding()
+
+      for (readPair <- readADAMRDD.map{case (fragmentEnd : ReadEndsForMarkDuplicates, pairedEnd : ReadEndsForMarkDuplicates) => pairedEnd}.filter(pairedEnd => !pairedEnd.eq(null)).collect()){
+        pairSort.add(readPair)
+      }
+      pairSort.doneAdding()
 
 
+      /*
       // Iterate the data and transform into new variables
       for (rec : AlignmentRecord <- readsrdd.collect()) {
         if (rec.getReadMapped) {
@@ -160,9 +169,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           }
         }
         index += 1
-      }
-      pairSort.doneAdding()
-      fragSort.doneAdding()
+      }*/
 
       println("*** Finish building pairSort and fragSort! ***")
     }
