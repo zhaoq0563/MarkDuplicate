@@ -42,14 +42,59 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         if (rec.getContig.getReferenceIndex == -1)
           null
       } else if (!rec.getSecondaryAlignment && !rec.getSupplementaryAlignment) {
-        var fragmentEnd: ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
+        val fragmentEnd: ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
         fragmentEnd
       }
       null
     }
 
     def buildPairSort(rec : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
+      val tmp: java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
 
+      if (rec.getReadMapped) {
+        if (rec.getContig.getReferenceIndex == -1)
+          null
+      } else if (!rec.getSecondaryAlignment && !rec.getSupplementaryAlignment) {
+        if (rec.getReadPaired && rec.getMateMapped) {
+          var checkpair : AlignmentRecord = findSecondRead(tmp, rec.getContig.getReferenceIndex, rec.getReadName)
+          if (checkpair == null) {
+            tmp.add(rec)
+            null
+          } else {
+            val pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, checkpair, libraryIdGenerator)
+            val currentEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, index, rec, libraryIdGenerator)
+            val sequence : Int = currentEnd.read1IndexInFile.asInstanceOf[Int]
+            val coordinate : Int = currentEnd.read1Coordinate
+
+            // Why this function has been removed?????? = does not matter
+            //if (rec.getFirstOfPair) {
+            pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(Boolean2boolean(rec.getReadNegativeStrand), pairedEnd.orientation == ReadEnds.R)
+            //} else {
+            //  pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, Boolean2boolean(rec.getReadNegativeStrand))
+            //}
+
+            if (sequence > pairedEnd.read1ReferenceIndex || (sequence == pairedEnd.read1ReferenceIndex && coordinate >= pairedEnd.read1Coordinate)) {
+              pairedEnd.read2ReferenceIndex = sequence
+              pairedEnd.read2Coordinate = coordinate
+              pairedEnd.read2IndexInFile = index
+              pairedEnd.orientation = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, rec.getReadNegativeStrand)
+            } else {
+              pairedEnd.read2ReferenceIndex = pairedEnd.read1ReferenceIndex
+              pairedEnd.read2Coordinate = pairedEnd.read1Coordinate
+              pairedEnd.read2IndexInFile = pairedEnd.read1IndexInFile
+              pairedEnd.read1ReferenceIndex = sequence
+              pairedEnd.read1Coordinate = coordinate
+              pairedEnd.read1IndexInFile = index
+              pairedEnd.orientation = ReadEnds.getOrientationByte(rec.getReadNegativeStrand, pairedEnd.orientation == ReadEnds.R)
+            }
+
+            pairedEnd.score += DuplicateScoringStrategy.computeDuplicateScore(new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header)), DUPLICATE_SCORING_STRATEGY)
+            pairedEnd
+          }
+        }
+        null
+      }
+      null
     }
 
     def transformRead(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) = {
