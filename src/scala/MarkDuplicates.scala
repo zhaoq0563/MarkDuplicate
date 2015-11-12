@@ -37,7 +37,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       finish
     }
 
-    def transformRead(input : String, readsrdd : RDD[AlignmentRecord]) = {
+    def transformRead(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) = {
       // Collect data from ADAM via Spark
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
@@ -148,7 +148,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       null
     }
 
-    def generateDupIndexes() = {
+    def generateDupIndexes(libraryIdGenerator : LibraryIdGenerator) = {
       // Generate the duplicate indexes for remove duplicate reads
       println("*** Start to generate duplicate indexes! ***")
 
@@ -310,8 +310,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
       val libraryIdGenerator = new LibraryIdGenerator(header)
 
-      transformRead(input, readsrdd)
-      generateDupIndexes()
+      transformRead(input, readsrdd, header, libraryIdGenerator)
+      generateDupIndexes(libraryIdGenerator)
       writetoADAM(output, readsrdd)
 
       val t1 = System.nanoTime() : Double
