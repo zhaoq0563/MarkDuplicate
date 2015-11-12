@@ -12,8 +12,6 @@ package scala
 
 import java.util
 
-import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
-
 import scala.util.control.Breaks.break
 
 import htsjdk.samtools._
@@ -23,6 +21,7 @@ import org.apache.spark.{SparkContext, SparkConf}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
 import org.bdgenomics.adam.models.{RecordGroupDictionary, SequenceDictionary, SAMFileHeaderWritable}
 import org.bdgenomics.adam.rdd.{ADAMSpecificRecordSequenceDictionaryRDDAggregator, ADAMContext}
+import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
 
@@ -42,11 +41,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // Collect data from ADAM via Spark
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
-      // Need to figure out how to get the header for building (pair/frag)Sort?????
-      val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsrdd).adamGetSequenceDictionary(false)
-      val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsrdd).adamGetReadGroupDictionary()
-      val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
-      val libraryIdGenerator = new LibraryIdGenerator(header)
       val tmp: java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
       var index : Long = 0
 
@@ -168,13 +162,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         } else if (areComparableForDuplicates(firstOfNextChunk, next, true : Boolean)) {
           nextChunk.add(next)
         } else {
-          if (nextChunk.size() > 1) markDuplicatePairs(nextChunk)
+          if (nextChunk.size() > 1) markDuplicatePairs(nextChunk, libraryIdGenerator)
           nextChunk.clear()
           nextChunk.add(next)
           firstOfNextChunk = next
         }
       }
-      if (nextChunk.size() > 1) markDuplicatePairs(nextChunk)
+      if (nextChunk.size() > 1) markDuplicatePairs(nextChunk, libraryIdGenerator)
       pairSort.cleanup()
       pairSort = null
 
@@ -218,7 +212,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       numDuplicateIndices += 1
     }
 
-    def markDuplicatePairs(list : java.util.ArrayList[ReadEndsForMarkDuplicates]) = {
+    def markDuplicatePairs(list : java.util.ArrayList[ReadEndsForMarkDuplicates], libraryIdGenerator : LibraryIdGenerator) = {
       var maxScore : Short = 0
       var best : ReadEndsForMarkDuplicates = null
 
@@ -310,6 +304,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
       val sc = new ADAMContext(new SparkContext(conf))
       val readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
+      // Get the header for building (pair/frag)Sort
+      val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsrdd).adamGetSequenceDictionary(false)
+      val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsrdd).adamGetReadGroupDictionary()
+      val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
+      val libraryIdGenerator = new LibraryIdGenerator(header)
 
       transformRead(input, readsrdd)
       generateDupIndexes()
