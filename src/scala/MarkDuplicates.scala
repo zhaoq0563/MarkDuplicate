@@ -336,9 +336,18 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
     }
 
-    def writetoADAM(output : String, readsrdd : RDD[AlignmentRecord]) = {
+    def writetoADAM(output : String, readsrdd : RDD[AlignmentRecord], sc : ADAMContext) = {
       // Write results to ADAM file on HDFS
       println("*** Start to write reads back to ADAM file without duplicates! ***")
+
+      // Transform duplicateIndexes into HashTable
+      val dpIndexes = new util.Hashtable[Long, Long]()
+      for (index : Long <- duplicateIndexes) {
+        dpIndexes.put(index, index)
+      }
+
+      val broadcastDpIndexes = sc.
+
 
       var indexInFile : Long = 0
       var nextDuplicateIndex : Long = 0
@@ -388,7 +397,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       transformRead(input, readsrdd, header, libraryIdGenerator)
       generateDupIndexes(libraryIdGenerator)
-      writetoADAM(output, readsrdd)
+      writetoADAM(output, readsrdd, sc)
 
       val t1 = System.nanoTime() : Double
 
