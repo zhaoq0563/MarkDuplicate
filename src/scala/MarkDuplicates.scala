@@ -20,7 +20,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
 import org.bdgenomics.adam.models.{RecordGroupDictionary, SequenceDictionary, SAMFileHeaderWritable}
-import org.bdgenomics.adam.rdd.{ADAMSpecificRecordSequenceDictionaryRDDAggregator, ADAMContext}
+import org.bdgenomics.adam.rdd.{ADAMRDDFunctions, ADAMSpecificRecordSequenceDictionaryRDDAggregator, ADAMContext}
 import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
@@ -336,7 +336,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
     }
 
-    def writetoADAM(output : String, readsrdd : RDD[AlignmentRecord], sc : ADAMContext) = {
+    def writetoADAM(output : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
       // Write results to ADAM file on HDFS
       println("*** Start to write reads back to ADAM file without duplicates! ***")
 
@@ -346,17 +346,25 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         dpIndexes.put(index, index)
       }
 
-      val broadcastDpIndexes = sc.
+      // Broadcast the duplicate indexes to nodes
+      val broadcastDpIndexes = sc.broadcast(dpIndexes)
 
+      val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
+        if (broadcastDpIndexes.value.contains(index)) {
+          read.setDuplicateRead(true)
+        } else read.setDuplicateRead(false)
+        read
+      }}
 
-      var indexInFile : Long = 0
+      /*var indexInFile : Long = 0
       var nextDuplicateIndex : Long = 0
       if (duplicateIndexes.hasNext) {
         nextDuplicateIndex = duplicateIndexes.next()
       } else {
         nextDuplicateIndex = -1
-      }
+      }*/
 
+      /*
       // broadcast(list)    hash_tbl    record.field in hash_tbl
       for (read <- readsrdd.collect()) {
         if (indexInFile == nextDuplicateIndex) {
@@ -370,10 +378,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           read.setDuplicateRead(false)
         }
         indexInFile += 1
-      }
+      }*/
 
       // Use the filter function to get rid of those reads contains indexes in the duplicateIndexes
-      readsrdd.filter(read => read.getDuplicateRead.eq(false)).adamParquetSave(output)
+      val saveADAMRDD = new ADAMRDDFunctions(readADAMRDD.filter(read => read.getDuplicateRead.eq(false)))
+      saveADAMRDD.adamParquetSave(output)
     }
 
     def main(args : Array[String]) = {
@@ -387,8 +396,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val t0 = System.nanoTime : Double
 
       val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
-      val sc = new ADAMContext(new SparkContext(conf))
-      val readsrdd: RDD[AlignmentRecord] = sc.loadAlignments(input)
+      val sc = new SparkContext(conf)
+      val ac = new ADAMContext(sc)
+      val readsrdd: RDD[AlignmentRecord] = ac.loadAlignments(input)
       // Get the header for building (pair/frag)Sort
       val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsrdd).adamGetSequenceDictionary(false)
       val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsrdd).adamGetReadGroupDictionary()
