@@ -214,11 +214,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       ends
     }
 
-    def findSecondRead (tmp : java.util.ArrayList[AlignmentRecord], referindex : Integer, readname : String) : AlignmentRecord = {
+    def findSecondRead (tmp : java.util.ArrayList[AlignmentRecord], referIndex : Integer, readName : String) : AlignmentRecord = {
       // Find out the paired read that was already been processed but did not find their mate
       // Return the read or return null if no finding
       for (target : AlignmentRecord <- tmp) {
-        if (target.getContig.getReferenceIndex == referindex && target.getReadName == readname)
+        if (target.getContig.getReferenceIndex == referIndex && target.getReadName == readName)
           target
       }
       null
