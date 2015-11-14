@@ -336,7 +336,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
     }
 
-    def writetoADAM(output : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
+    def writeToADAM(output : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
       // Write results to ADAM file on HDFS
       println("*** Start to write reads back to ADAM file without duplicates! ***")
 
@@ -388,10 +388,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def main(args : Array[String]) = {
       val input = args(0)
       val output = args(1)
-      val headerinput = args(2)
+      //val headerinput = args(2)
       println("*** The directory of input ADAM file             : " + input)
       println("*** The directory of output ADAM file            : " + output)
-      println("*** The directory of input Fasta file for header : " + headerinput)
+      //println("*** The directory of input Fasta file for header : " + headerinput)
 
       val t0 = System.nanoTime : Double
 
@@ -407,7 +407,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       transformRead(input, readsrdd, header, libraryIdGenerator)
       generateDupIndexes(libraryIdGenerator)
-      writetoADAM(output, readsrdd, sc)
+      writeToADAM(output, readsrdd, sc)
 
       val t1 = System.nanoTime() : Double
 
