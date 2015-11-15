@@ -12,6 +12,7 @@ package scala
 
 import java.util
 
+import scala.util.CSAlignmentRecord
 import scala.util.control.Breaks.break
 
 import htsjdk.samtools._
@@ -36,6 +37,61 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var finish : Int = 0
       finish
     }
+
+    // Transform the rdd in ADAM format to our self customized format to build pair/frag Sort list
+    def transformADAMrddToCSrdd(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) = {
+      println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
+
+      val tmp: java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
+      var index : Long = 0
+
+      // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
+      val readCSIndexRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
+        var CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, header, libraryIdGenerator)
+
+
+
+        CSRecord
+      }}
+
+      // Collect the data from CSrdd and iterate them to build frag/pair Sort
+
+
+
+
+      val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
+        val fragmentEnd = buildFragSort(read, index, header, libraryIdGenerator)
+        val pairedEnd = buildPairSort(read, index, header, libraryIdGenerator)
+        (fragmentEnd, pairedEnd)
+      }}
+
+      for (readFrag <- readADAMRDD.map{case (fragmentEnd : ReadEndsForMarkDuplicates, pairedEnd : ReadEndsForMarkDuplicates) => fragmentEnd }.filter(fragmentEnd => !fragmentEnd.eq(null)).collect()){
+        fragSort.add(readFrag)
+      }
+      fragSort.doneAdding()
+
+      for (readPair <- readADAMRDD.map{case (fragmentEnd : ReadEndsForMarkDuplicates, pairedEnd : ReadEndsForMarkDuplicates) => pairedEnd}.filter(pairedEnd => !pairedEnd.eq(null)).collect()){
+        pairSort.add(readPair)
+      }
+      pairSort.doneAdding()
+
+      println("*** Finish building pairSort and fragSort! ***")
+    }
+
+    def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
+      // Build one single CSAlignmentRecord for CSrdd with index
+      var CSRecord : CSAlignmentRecord = new CSAlignmentRecord()
+
+
+      CSRecord
+    }
+
+
+
+
+
+
+
 
     def buildFragSort(rec : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
       if (rec.getReadMapped == false) {
