@@ -59,6 +59,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
 
 
+
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         val fragmentEnd = buildFragSort(read, index, header, libraryIdGenerator)
         val pairedEnd = buildPairSort(read, index, header, libraryIdGenerator)
@@ -81,6 +82,21 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
       // Build one single CSAlignmentRecord for CSrdd with index
       var CSRecord : CSAlignmentRecord = new CSAlignmentRecord()
+      val readSAM: SAMRecord = new AlignmentRecordConverter().convert(read, new SAMFileHeaderWritable(header))
+      CSRecord.referenceIndex = readSAM.getReferenceIndex()
+      CSRecord.readNegativeStrandFlag = readSAM.getReadNegativeStrandFlag()
+      CSRecord.unclippedEnd = readSAM.getUnclippedEnd
+      CSRecord = readSAM
+      CSRecord = readSAM
+      CSRecord = readSAM
+      CSRecord = readSAM
+      CSRecord = readSAM
+      CSRecord = readSAM
+      CSRecord = readSAM
+      CSRecord = readSAM
+      CSRecord = readSAM
+
+
 
 
       CSRecord
