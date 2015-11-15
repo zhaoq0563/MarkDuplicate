@@ -7,11 +7,14 @@ class CSAlignmentRecord {
   // Single alignment record for building frag/pair Sort
 
   // Flags needed for building frag/pair Sort
+  var readUnmappedFlag : Boolean = false
+  var secondaryOrSupplementary : Boolean = false
   var referenceIndex : Integer = 0
   var readNegativeStrandFlag : Boolean = false
   var unclippedEnd : Int = 0
   var unclippedStart : Int = 0
   var pairedFlag : Boolean = false
+  var firstOfPair : Boolean = false
   var mateUnmappedFlag : Boolean = false
   var mateReferenceIndex : Integer = 0
   var readName : String = null
@@ -20,11 +23,13 @@ class CSAlignmentRecord {
   var libraryId : Short = 0
   var index : Long = 0
 
+  def getReadUnmappedFlag = {this.readUnmappedFlag}
   def getReferenceIndex = {this.referenceIndex}
   def getReadNegativeStrandFlag = {this.readNegativeStrandFlag}
   def getUnclippedEnd = {this.unclippedEnd}
   def getUnclippedStart = {this.unclippedStart}
   def getReadPairedFlag = {this.pairedFlag}
+  def getFirstOfPairFlag = {this.firstOfPair}
   def getMateUnmappedFlag = {this.mateUnmappedFlag}
   def getMateReferenceIndex = {this.mateReferenceIndex}
   def getReadName = {this.readName}
@@ -32,6 +37,8 @@ class CSAlignmentRecord {
   def getScore = {this.score}
   def getLibraryId = {this.libraryId}
   def getIndex = {this.index}
+
+  def isSecondaryOrSupplementary = {this.secondaryOrSupplementary}
 
 
 }

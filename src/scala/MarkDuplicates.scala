@@ -44,23 +44,62 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def transformADAMrddToCSrdd(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) = {
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
-      val tmp: java.util.ArrayList[AlignmentRecord] = new util.ArrayList[AlignmentRecord]
+      val tmp: java.util.ArrayList[CSAlignmentRecord] = new util.ArrayList[CSAlignmentRecord]
       var index : Long = 0
 
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
       val readCSIndexRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
-        var CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, header, libraryIdGenerator)
-
-
+        val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, header, libraryIdGenerator)
 
         CSRecord
       }}
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
+      for (readCSRecord <- readCSIndexRDD.collect()) {
+        if (readCSRecord.getReadUnmappedFlag) {
+          if (readCSRecord.getReferenceIndex == -1) {
+            break()
+          }
+        } else if (!readCSRecord.isSecondaryOrSupplementary) {
+          val fragmentEnd = buildReadEnds(header, readCSRecord, libraryIdGenerator)
+          fragSort.add(fragmentEnd)
 
+          if (readCSRecord.getReadPairedFlag && !readCSRecord.getMateUnmappedFlag) {
+            val checkPair = findMate(tmp, readCSRecord.getReferenceIndex, readCSRecord.getReadName)
+            if (checkPair == null) {
+              tmp.add(readCSRecord)
+            } else {
+              val sequence : Int = fragmentEnd.read1IndexInFile.asInstanceOf[Int]
+              val coordinate : Int = fragmentEnd.read1Coordinate
+              val pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, checkPair, libraryIdGenerator)
 
+              if (readCSRecord.getFirstOfPairFlag) {
+                pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, pairedEnd.orientation == ReadEnds.R)
+              } else {
+                pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
+              }
 
+              if (sequence > pairedEnd.read1ReferenceIndex || (sequence == pairedEnd.read1ReferenceIndex && coordinate >= pairedEnd.read1Coordinate)) {
+                pairedEnd.read2ReferenceIndex = sequence
+                pairedEnd.read2Coordinate = coordinate
+                pairedEnd.read2IndexInFile = index
+                pairedEnd.orientation = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
+              } else {
+                pairedEnd.read2ReferenceIndex = pairedEnd.read1ReferenceIndex
+                pairedEnd.read2Coordinate = pairedEnd.read1Coordinate
+                pairedEnd.read2IndexInFile = pairedEnd.read1IndexInFile
+                pairedEnd.read1ReferenceIndex = sequence
+                pairedEnd.read1Coordinate = coordinate
+                pairedEnd.read1IndexInFile = index
+                pairedEnd.orientation = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, pairedEnd.orientation == ReadEnds.R)
+              }
 
+              pairedEnd.score += readCSRecord.getScore
+              pairSort.add(pairedEnd)
+            }
+          }
+        }
+      }
 
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         val fragmentEnd = buildFragSort(read, index, header, libraryIdGenerator)
@@ -84,12 +123,17 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
       // Build one single CSAlignmentRecord for CSrdd with index
       val CSRecord : CSAlignmentRecord = new CSAlignmentRecord()
-      val readSAM: SAMRecord = new AlignmentRecordConverter().convert(read, new SAMFileHeaderWritable(header))
+      val readSAM : SAMRecord = new AlignmentRecordConverter().convert(read, new SAMFileHeaderWritable(header))
+
+      // Assign the flags of CSAlignmentRecord from SAMRecord
+      CSRecord.readUnmappedFlag = readSAM.getReadUnmappedFlag
+      CSRecord.secondaryOrSupplementary = readSAM.isSecondaryOrSupplementary
       CSRecord.referenceIndex = readSAM.getReferenceIndex
       CSRecord.readNegativeStrandFlag = readSAM.getReadNegativeStrandFlag
       CSRecord.unclippedEnd = readSAM.getUnclippedEnd
       CSRecord.unclippedStart = readSAM.getUnclippedStart
       CSRecord.pairedFlag = readSAM.getReadPairedFlag
+      CSRecord.firstOfPair = readSAM.getFirstOfPairFlag
       CSRecord.mateUnmappedFlag = readSAM.getMateUnmappedFlag
       CSRecord.mateReferenceIndex = readSAM.getMateReferenceIndex
       CSRecord.readName = readSAM.getReadName
@@ -245,32 +289,32 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Finish building pairSort and fragSort! ***")
     }
 
-    def buildReadEnds(header : SAMFileHeader, index : Long, rec : AlignmentRecord, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
+    def buildReadEnds(header : SAMFileHeader, rec : CSAlignmentRecord, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
       // Build the ReadEnd for each read in ADAM
       val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
-      val recSAM: SAMRecord = new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header))
+      //val recSAM: SAMRecord = new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header))
 
-      ends.read1ReferenceIndex = Integer2int(recSAM.getReferenceIndex)
-      if (recSAM.getReadNegativeStrandFlag) {
-        ends.read1Coordinate = recSAM.getUnclippedEnd
+      ends.read1ReferenceIndex = Integer2int(rec.getReferenceIndex)
+      if (rec.getReadNegativeStrandFlag) {
+        ends.read1Coordinate = rec.getUnclippedEnd
         ends.orientation = ReadEnds.R
       }
       else {
-        ends.read1Coordinate = recSAM.getUnclippedStart
+        ends.read1Coordinate = rec.getUnclippedStart
         ends.orientation = ReadEnds.F
       }
-      ends.read1IndexInFile = index
-      ends.score = DuplicateScoringStrategy.computeDuplicateScore(recSAM, DUPLICATE_SCORING_STRATEGY)
+      ends.read1IndexInFile = rec.getIndex
+      ends.score = rec.getScore
 
-      if (recSAM.getReadPairedFlag && !recSAM.getMateUnmappedFlag)
-        ends.read2ReferenceIndex = recSAM.getMateReferenceIndex.asInstanceOf[Int]
+      if (rec.getReadPairedFlag && !rec.getMateUnmappedFlag)
+        ends.read2ReferenceIndex = rec.getMateReferenceIndex.asInstanceOf[Int]
 
-      ends.libraryId = libraryIdGenerator.getLibraryId(recSAM)
+      ends.libraryId = rec.getLibraryId
 
-      if (opticalDuplicateFinder.addLocationInformation(recSAM.getReadName, ends)) {
+      if (opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
-        val rg: String = recSAM.getAttribute("RG").toString
+        val rg: String = rec.getAttribute
         val readGroups: java.util.List[SAMReadGroupRecord] = header.getReadGroups
 
         if (rg != null && readGroups != null) {
@@ -285,11 +329,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       ends
     }
 
-    def findSecondRead (tmp : java.util.ArrayList[AlignmentRecord], referIndex : Integer, readName : String) : AlignmentRecord = {
+    def findMate (tmp : java.util.ArrayList[CSAlignmentRecord], referenceIndex : Integer, readName : String) : CSAlignmentRecord = {
       // Find out the paired read that was already been processed but did not find their mate
       // Return the read or return null if no finding
-      for (target : AlignmentRecord <- tmp) {
-        if (target.getContig.getReferenceIndex == referIndex && target.getReadName == readName)
+      for (target : CSAlignmentRecord<- tmp) {
+        if (target.getReferenceIndex == referenceIndex && target.getReadName == readName)
           target
       }
       null
