@@ -12,6 +12,8 @@ package scala
 
 import java.util
 
+import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
+
 import scala.util.CSAlignmentRecord
 import scala.util.control.Breaks.break
 
@@ -81,23 +83,20 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
       // Build one single CSAlignmentRecord for CSrdd with index
-      var CSRecord : CSAlignmentRecord = new CSAlignmentRecord()
+      val CSRecord : CSAlignmentRecord = new CSAlignmentRecord()
       val readSAM: SAMRecord = new AlignmentRecordConverter().convert(read, new SAMFileHeaderWritable(header))
-      CSRecord.referenceIndex = readSAM.getReferenceIndex()
-      CSRecord.readNegativeStrandFlag = readSAM.getReadNegativeStrandFlag()
+      CSRecord.referenceIndex = readSAM.getReferenceIndex
+      CSRecord.readNegativeStrandFlag = readSAM.getReadNegativeStrandFlag
       CSRecord.unclippedEnd = readSAM.getUnclippedEnd
-      CSRecord = readSAM
-      CSRecord = readSAM
-      CSRecord = readSAM
-      CSRecord = readSAM
-      CSRecord = readSAM
-      CSRecord = readSAM
-      CSRecord = readSAM
-      CSRecord = readSAM
-      CSRecord = readSAM
-
-
-
+      CSRecord.unclippedStart = readSAM.getUnclippedStart
+      CSRecord.pairedFlag = readSAM.getReadPairedFlag
+      CSRecord.mateUnmappedFlag = readSAM.getMateUnmappedFlag
+      CSRecord.mateReferenceIndex = readSAM.getMateReferenceIndex
+      CSRecord.readName = readSAM.getReadName
+      CSRecord.attribute = readSAM.getAttribute("RG").toString
+      CSRecord.score = DuplicateScoringStrategy.computeDuplicateScore(readSAM, ScoringStrategy.SUM_OF_BASE_QUALITIES)
+      CSRecord.libraryId = libraryIdGenerator.getLibraryId(readSAM)
+      CSRecord.index = index
 
       CSRecord
     }
