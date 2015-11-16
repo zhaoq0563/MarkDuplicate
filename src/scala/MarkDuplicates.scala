@@ -10,8 +10,6 @@
 
 package scala
 
-import java.util
-
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 
 import scala.util.CSAlignmentRecord
@@ -44,8 +42,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) = {
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
-      val tmp: java.util.ArrayList[CSAlignmentRecord] = new util.ArrayList[CSAlignmentRecord]
-      var index : Long = 0
+      val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
 
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
       val readCSIndexRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
@@ -82,7 +79,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
               if (sequence > pairedEnd.read1ReferenceIndex || (sequence == pairedEnd.read1ReferenceIndex && coordinate >= pairedEnd.read1Coordinate)) {
                 pairedEnd.read2ReferenceIndex = sequence
                 pairedEnd.read2Coordinate = coordinate
-                pairedEnd.read2IndexInFile = index
+                pairedEnd.read2IndexInFile = readCSRecord.getIndex
                 pairedEnd.orientation = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
               } else {
                 pairedEnd.read2ReferenceIndex = pairedEnd.read1ReferenceIndex
@@ -90,7 +87,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
                 pairedEnd.read2IndexInFile = pairedEnd.read1IndexInFile
                 pairedEnd.read1ReferenceIndex = sequence
                 pairedEnd.read1Coordinate = coordinate
-                pairedEnd.read1IndexInFile = index
+                pairedEnd.read1IndexInFile = readCSRecord.getIndex
                 pairedEnd.orientation = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, pairedEnd.orientation == ReadEnds.R)
               }
 
@@ -314,10 +311,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         val readGroups: java.util.List[SAMReadGroupRecord] = header.getReadGroups
 
         if (rg != null && readGroups != null) {
-          for (readGroup :SAMReadGroupRecord <- readGroups) {
+          for (readGroup : SAMReadGroupRecord <- readGroups) {
             if (readGroup.getReadGroupId.equals(rg))
               break()
-            else ends.readGroup+=1
+            else ends.readGroup += 1.toShort
           }
         }
       }
@@ -328,7 +325,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def findMate (tmp : java.util.ArrayList[CSAlignmentRecord], referenceIndex : Integer, readName : String) : CSAlignmentRecord = {
       // Find out the paired read that was already been processed but did not find their mate
       // Return the read or return null if no finding
-      for (target : CSAlignmentRecord<- tmp) {
+      for (target : CSAlignmentRecord <- tmp) {
         if (target.getReferenceIndex == referenceIndex && target.getReadName == readName)
           target
       }
@@ -452,7 +449,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Start to write reads back to ADAM file without duplicates! ***")
 
       // Transform duplicateIndexes into HashTable
-      val dpIndexes = new util.Hashtable[Long, Long]()
+      val dpIndexes = new java.util.Hashtable[Long, Long]()
       for (index : Long <- duplicateIndexes) {
         dpIndexes.put(index, index)
       }
@@ -492,7 +489,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }*/
 
       // Use the filter function to get rid of those reads contains indexes in the duplicateIndexes
-      val saveADAMRDD = new ADAMRDDFunctions(readADAMRDD.filter(read => read.getDuplicateRead.eq(false)))
+      val saveADAMRDDFilter = readADAMRDD.filter(read => read.getDuplicateRead.eq(false))
+      val saveADAMRDD = new ADAMRDDFunctions(saveADAMRDDFilter)
       saveADAMRDD.adamParquetSave(output)
     }
 

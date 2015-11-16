@@ -1,27 +1,28 @@
 package scala.util
 
 /**
- * Created by SpinyQ on 11/14/15.
+ * Created by Qi Zhao on 11/14/15.
  */
+
 class CSAlignmentRecord {
   // Single alignment record for building frag/pair Sort
 
   // Flags needed for building frag/pair Sort
-  var readUnmappedFlag : Boolean = false
-  var secondaryOrSupplementary : Boolean = false
-  var referenceIndex : Integer = 0
-  var readNegativeStrandFlag : Boolean = false
-  var unclippedEnd : Int = 0
-  var unclippedStart : Int = 0
-  var pairedFlag : Boolean = false
-  var firstOfPair : Boolean = false
-  var mateUnmappedFlag : Boolean = false
-  var mateReferenceIndex : Integer = 0
-  var readName : String = null
-  var attribute : String = null
-  var score : Short = 0
-  var libraryId : Short = 0
-  var index : Long = 0
+  var readUnmappedFlag : Boolean = _
+  var secondaryOrSupplementary : Boolean = _
+  var referenceIndex : Integer = _
+  var readNegativeStrandFlag : Boolean = _
+  var unclippedEnd : Int = _
+  var unclippedStart : Int = _
+  var pairedFlag : Boolean = _
+  var firstOfPair : Boolean = _
+  var mateUnmappedFlag : Boolean = _
+  var mateReferenceIndex : Integer = _
+  var readName : String = _
+  var attribute : String = _
+  var score : Short = _
+  var libraryId : Short = _
+  var index : Long = _
 
   def getReadUnmappedFlag = {this.readUnmappedFlag}
   def getReferenceIndex = {this.referenceIndex}
@@ -39,6 +40,5 @@ class CSAlignmentRecord {
   def getIndex = {this.index}
 
   def isSecondaryOrSupplementary = {this.secondaryOrSupplementary}
-
 
 }
