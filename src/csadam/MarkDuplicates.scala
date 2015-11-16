@@ -8,15 +8,15 @@
 //***                                                     ***//
 ///////////////////////////////////////////////////////////////
 
-package scala
+package csadam
 
-import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
+import csadam.util.{ReadEndsMDComparator, CSAlignmentRecord}
 
-import scala.util.{ReadEndsMDComparator, CSAlignmentRecord}
 import scala.util.control.Breaks.break
 
 import htsjdk.samtools._
 import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
+import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter

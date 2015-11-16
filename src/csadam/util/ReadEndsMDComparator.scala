@@ -1,4 +1,4 @@
-package scala.util
+package csadam.util
 
 import java.util._
 import picard.sam.markduplicates.util.ReadEndsForMarkDuplicates
