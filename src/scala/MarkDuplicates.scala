@@ -12,7 +12,7 @@ package scala
 
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 
-import scala.util.CSAlignmentRecord
+import scala.util.{ReadEndsMDComparator, CSAlignmentRecord}
 import scala.util.control.Breaks.break
 
 import htsjdk.samtools._
@@ -28,8 +28,9 @@ import picard.sam.markduplicates.util._
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
-    var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates]
-    var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates]
+    var maxInMemory : Int = (Runtime.getRuntime.maxMemory() * 0.5 / ReadEndsForMarkDuplicates.SIZE_OF).toInt
+    var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates](ReadEndsForMarkDuplicates, new ReadEndsForMarkDuplicatesCodec(), new ReadEndsMDComparator(), maxInMemory, this.TMP_DIR)
+    var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates](ReadEndsForMarkDuplicates, new ReadEndsForMarkDuplicatesCodec(), new ReadEndsMDComparator(), maxInMemory, this.TMP_DIR)
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
 
