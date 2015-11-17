@@ -11,6 +11,7 @@
 package csadam
 
 import java.util.Comparator
+import csadam.util.CSAlignmentRecord
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import htsjdk.samtools._
 import htsjdk.samtools.util.{SortingCollection, SortingLongCollection}
@@ -92,7 +93,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
                 pairedEnd.orientation = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, pairedEnd.orientation == ReadEnds.R)
               }
 
-              pairedEnd.score += readCSRecord.getScore
+              pairedEnd.score = (pairedEnd.score + readCSRecord.getScore).toShort
               pairSort.add(pairedEnd)
             }
           }
@@ -315,7 +316,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           for (readGroup : SAMReadGroupRecord <- readGroups) {
             if (readGroup.getReadGroupId.equals(rg))
               break()
-            else ends.readGroup += 1.toShort
+            else ends.readGroup = (ends.readGroup + 1).toShort
           }
         }
       }
@@ -451,7 +452,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       // Transform duplicateIndexes into HashTable
       val dpIndexes = new java.util.Hashtable[Long, Long]()
-      for (index : Long <- duplicateIndexes) {
+      for (index <- duplicateIndexes) {
         dpIndexes.put(index, index)
       }
 
@@ -490,7 +491,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }*/
 
       // Use the filter function to get rid of those reads contains indexes in the duplicateIndexes
-      val saveADAMRDDFilter = readADAMRDD.filter(read => read.getDuplicateRead.eq(false))
+      val saveADAMRDDFilter = readADAMRDD.filter(read  => read.getDuplicateRead.equals(false))
       val saveADAMRDD = new ADAMRDDFunctions(saveADAMRDDFilter)
       saveADAMRDD.adamParquetSave(output)
     }
