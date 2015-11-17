@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="adam-cli_2.10-0.18.2-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/adam/adam/adam-cli/target/adam-cli_2.10-0.18.2-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/adam/adam/adam-cli/target/adam-cli_2.10-0.18.2-SNAPSHOT.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -8,5 +8,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-sdk-2.11.7" level="application" />
+    <orderEntry type="library" name="picard" level="project" />
+    <orderEntry type="library" name="spark-assembly-1.5.1-hadoop2.4.0" level="project" />
+    <orderEntry type="library" name="adam-cli_2.10-0.18.2-SNAPSHOT" level="project" />
   </component>
 </module>

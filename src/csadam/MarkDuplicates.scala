@@ -10,7 +10,7 @@
 
 package csadam
 
-import java.util.Comparator
+import java.util.{Comparator, List, ArrayList}
 import csadam.util.CSAlignmentRecord
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import htsjdk.samtools._
@@ -310,27 +310,39 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
         val rg: String = rec.getAttribute
-        val readGroups: java.util.List[SAMReadGroupRecord] = header.getReadGroups
+        val readGroups : List[SAMReadGroupRecord] = header.getReadGroups
+        val it = readGroups.iterator
 
         if (rg != null && readGroups != null) {
-          for (readGroup : SAMReadGroupRecord <- readGroups) {
-            if (readGroup.getReadGroupId.equals(rg))
+          while (it.hasNext) {
+            if (it.next.getReadGroupId.equals(rg))
               break()
             else ends.readGroup = (ends.readGroup + 1).toShort
           }
+          /*for (readGroup : SAMReadGroupRecord <- readGroups) {
+            if (readGroup.getReadGroupId.equals(rg))
+              break()
+            else ends.readGroup = (ends.readGroup + 1).toShort
+          }*/
         }
       }
 
       ends
     }
 
-    def findMate (tmp : java.util.ArrayList[CSAlignmentRecord], referenceIndex : Integer, readName : String) : CSAlignmentRecord = {
+    def findMate (tmp : ArrayList[CSAlignmentRecord], referenceIndex : Integer, readName : String) : CSAlignmentRecord = {
       // Find out the paired read that was already been processed but did not find their mate
       // Return the read or return null if no finding
-      for (target : CSAlignmentRecord <- tmp) {
+      val it = tmp.iterator
+      while (it.hasNext) {
+        val tmpRecord : CSAlignmentRecord = it.next
+        if (tmpRecord.getReferenceIndex == referenceIndex && tmpRecord.getReadName == readName)
+          tmpRecord
+      }
+      /*for (target : CSAlignmentRecord <- tmp) {
         if (target.getReferenceIndex == referenceIndex && target.getReadName == readName)
           target
-      }
+      }*/
       null
     }
 
@@ -341,7 +353,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var firstOfNextChunk : ReadEndsForMarkDuplicates = null
       val nextChunk = new java.util.ArrayList[ReadEndsForMarkDuplicates](200)
 
-      for (next : ReadEndsForMarkDuplicates <- pairSort) {
+      val itPairSort = pairSort.iterator
+      while (itPairSort.hasNext) {
+        val next : ReadEndsForMarkDuplicates = itPairSort.next
         if (firstOfNextChunk == null) {
           firstOfNextChunk = next
           nextChunk.add(firstOfNextChunk)
@@ -361,7 +375,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var containsPairs : Boolean = false
       var containsFrags : Boolean = false
 
-      for (next : ReadEndsForMarkDuplicates <- fragSort) {
+      val itFragSort = fragSort.iterator
+      while (itFragSort.hasNext) {
+        val next : ReadEndsForMarkDuplicates = itFragSort.next
         if (firstOfNextChunk != null && areComparableForDuplicates(firstOfNextChunk, next, false : Boolean)) {
           nextChunk.add(next)
           containsPairs = containsPairs || next.isPaired
