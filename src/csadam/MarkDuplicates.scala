@@ -419,19 +419,35 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var best : ReadEndsForMarkDuplicates = null
 
       /** All read ends should have orientation FF, FR, RF, or RR **/
-      for (end : ReadEndsForMarkDuplicates <- list) {
+      val it1st = list.iterator
+      while (it1st.hasNext) {
+        val end = it1st.next
         if (end.score > maxScore || best == null) {
           maxScore = end.score
           best = end
         }
       }
+      /*for (end : ReadEndsForMarkDuplicates <- list) {
+        if (end.score > maxScore || best == null) {
+          maxScore = end.score
+          best = end
+        }
+      }*/
 
-      for (end : ReadEndsForMarkDuplicates <- list) {
+      val it2nd = list.iterator
+      while (it2nd.hasNext) {
+        val end = it2nd.next
         if (end != best) {
           addIndexAsDuplicate(end.read1IndexInFile)
           addIndexAsDuplicate(end.read2IndexInFile)
         }
       }
+      /*for (end : ReadEndsForMarkDuplicates <- list) {
+        if (end != best) {
+          addIndexAsDuplicate(end.read1IndexInFile)
+          addIndexAsDuplicate(end.read2IndexInFile)
+        }
+      }*/
 
       // Null for libraryIdGenerator, need to figure out how to get SAM/BAM header
       if (OpticalDuplicateFinder.DEFAULT_READ_NAME_REGEX != null) {
@@ -441,24 +457,44 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     def markDuplicateFragments(list : java.util.ArrayList[ReadEndsForMarkDuplicates], containsPairs : Boolean) = {
       if (containsPairs) {
-        for (end : ReadEndsForMarkDuplicates <- list) {
+        val it1st = list.iterator
+        while (it1st.hasNext) {
+          val end = it1st.next
           if (!end.isPaired) addIndexAsDuplicate(end.read1IndexInFile)
         }
+        /*for (end : ReadEndsForMarkDuplicates <- list) {
+          if (!end.isPaired) addIndexAsDuplicate(end.read1IndexInFile)
+        }*/
       } else {
         var maxScore : Short = 0
         var best : ReadEndsForMarkDuplicates = null
-        for (end : ReadEndsForMarkDuplicates <- list) {
+        val it2nd = list.iterator
+        while (it2nd.hasNext) {
+          val end = it2nd.next
           if (end.score > maxScore || best == null) {
             maxScore = end.score
             best = end
           }
         }
+        /*for (end : ReadEndsForMarkDuplicates <- list) {
+          if (end.score > maxScore || best == null) {
+            maxScore = end.score
+            best = end
+          }
+        }*/
 
-        for (end : ReadEndsForMarkDuplicates <- list) {
+        val it3rd = list.iterator
+        while (it3rd.hasNext) {
+          val end = it3rd.next
           if (end != best) {
             addIndexAsDuplicate(end.read1IndexInFile)
           }
         }
+        /*for (end : ReadEndsForMarkDuplicates <- list) {
+          if (end != best) {
+            addIndexAsDuplicate(end.read1IndexInFile)
+          }
+        }*/
       }
     }
 
@@ -468,9 +504,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       // Transform duplicateIndexes into HashTable
       val dpIndexes = new java.util.Hashtable[Long, Long]()
-      for (index <- duplicateIndexes) {
-        dpIndexes.put(index, index)
+      while (duplicateIndexes.hasNext) {
+        val value = duplicateIndexes.next
+        dpIndexes.put(value, value)
       }
+      /*for (index <- duplicateIndexes) {
+        dpIndexes.put(index, index)
+      }*/
 
       // Broadcast the duplicate indexes to nodes
       val broadcastDpIndexes = sc.broadcast(dpIndexes)
