@@ -10,27 +10,26 @@
 
 package csadam
 
-import csadam.util.{ReadEndsMDComparator, CSAlignmentRecord}
-
-import scala.util.control.Breaks.break
-
-import htsjdk.samtools._
-import htsjdk.samtools.util.{SortingLongCollection, SortingCollection}
+import java.util.Comparator
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
+import htsjdk.samtools._
+import htsjdk.samtools.util.{SortingCollection, SortingLongCollection}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{SparkConf, SparkContext}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
-import org.bdgenomics.adam.models.{RecordGroupDictionary, SequenceDictionary, SAMFileHeaderWritable}
-import org.bdgenomics.adam.rdd.{ADAMRDDFunctions, ADAMSpecificRecordSequenceDictionaryRDDAggregator, ADAMContext}
+import org.bdgenomics.adam.models.{RecordGroupDictionary, SAMFileHeaderWritable, SequenceDictionary}
 import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
+import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
+
+import scala.util.control.Breaks.break
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     var maxInMemory : Int = (Runtime.getRuntime.maxMemory() * 0.5 / ReadEndsForMarkDuplicates.SIZE_OF).toInt
-    var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates](ReadEndsForMarkDuplicates, new ReadEndsForMarkDuplicatesCodec(), new ReadEndsMDComparator(), maxInMemory, this.TMP_DIR)
-    var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = new SortingCollection[ReadEndsForMarkDuplicates](ReadEndsForMarkDuplicates, new ReadEndsForMarkDuplicatesCodec(), new ReadEndsMDComparator(), maxInMemory, this.TMP_DIR)
+    var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, this.TMP_DIR)
+    var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, this.TMP_DIR)
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
 
@@ -53,7 +52,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }}
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
-      for (readCSRecord <- readCSIndexRDD.collect()) {
+      val readArray : Array[CSAlignmentRecord] = readCSIndexRDD.collect()
+      for (readCSRecord <- readArray) {
         if (readCSRecord.getReadUnmappedFlag) {
           if (readCSRecord.getReferenceIndex == -1) {
             break()
@@ -493,6 +493,42 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val saveADAMRDDFilter = readADAMRDD.filter(read => read.getDuplicateRead.eq(false))
       val saveADAMRDD = new ADAMRDDFunctions(saveADAMRDDFilter)
       saveADAMRDD.adamParquetSave(output)
+    }
+
+    class ReadEndsComparator extends Comparator[ReadEndsForMarkDuplicates] {
+
+      def compare(lhs: ReadEndsForMarkDuplicates, rhs: ReadEndsForMarkDuplicates): Int = {
+        var retval : Int = lhs.libraryId - rhs.libraryId
+        if(retval == 0) {
+          retval = lhs.read1ReferenceIndex - rhs.read1ReferenceIndex
+        }
+
+        if(retval == 0) {
+          retval = lhs.read1Coordinate - rhs.read1Coordinate
+        }
+
+        if(retval == 0) {
+          retval = lhs.orientation - rhs.orientation
+        }
+
+        if(retval == 0) {
+          retval = lhs.read2ReferenceIndex - rhs.read2ReferenceIndex
+        }
+
+        if(retval == 0) {
+          retval = lhs.read2Coordinate - rhs.read2Coordinate
+        }
+
+        if(retval == 0) {
+          retval = (lhs.read1IndexInFile - rhs.read1IndexInFile).toInt
+        }
+
+        if(retval == 0) {
+          retval = (lhs.read2IndexInFile - rhs.read2IndexInFile).toInt
+        }
+
+        retval
+      }
     }
 
     def main(args : Array[String]) = {
