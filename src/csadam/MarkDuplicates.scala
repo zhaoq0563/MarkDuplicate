@@ -613,6 +613,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       generateDupIndexes(libraryIdGenerator)
       writeToADAM(output, readsrdd, sc)
 
+      val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
+
+      println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !")
       val t1 = System.nanoTime() : Double
 
       println("*** Mark duplicate has been successfully done! ***")
