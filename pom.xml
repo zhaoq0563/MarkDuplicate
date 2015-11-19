@@ -44,7 +44,7 @@
             <artifactId>picard</artifactId>
             <version>1.14.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/picard.jar</systemPath>
+            <systemPath>${basedir}/lib/picard.jar</systemPath>
         </dependency>
     </dependencies>
 
