@@ -8,10 +8,10 @@
 //***                                                     ***//
 ///////////////////////////////////////////////////////////////
 
-package csadam
+package main.scala.csadam
 
 import java.util.{Comparator, List, ArrayList}
-import csadam.util.CSAlignmentRecord
+import main.scala.csadam.util.CSAlignmentRecord
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import htsjdk.samtools._
 import htsjdk.samtools.util.{SortingCollection, SortingLongCollection}

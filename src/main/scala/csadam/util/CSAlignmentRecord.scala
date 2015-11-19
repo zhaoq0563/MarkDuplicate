@@ -1,4 +1,4 @@
-package csadam.util
+package main.scala.csadam.util
 
 /**
  * Created by Qi Zhao on 11/14/15.
