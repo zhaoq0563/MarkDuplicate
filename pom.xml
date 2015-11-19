@@ -10,10 +10,18 @@
     <url>https://github.com/zhaoq0563/MarkDuplicate</url>
 
     <properties>
+        <java.version>1.7</java.version>
         <scala.version>2.11.7</scala.version>
+        <parquet.version>1.3.2</parquet.version>
+        <hadoop.version>2.4.0</hadoop.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.10</artifactId>
+            <version>1.5.1</version>
+        </dependency>
         <dependency>
             <groupId>org.bdgenomics.adam</groupId>
             <artifactId>ADAM_2.10: CLI</artifactId>
