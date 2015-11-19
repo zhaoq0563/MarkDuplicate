@@ -53,6 +53,7 @@
             <plugin>
                 <groupId>org.scala-tools</groupId>
                 <artifactId>maven-scala-plugin</artifactId>
+                <version>${scala.version}</version>
                 <executions>
                     <execution>
                         <goals>
