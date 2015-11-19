@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>org.bdgenomics.adam</groupId>
-            <artifactId>ADAM_2.10: CLI</artifactId>
+            <artifactId>adam-cli_2.10</artifactId>
             <version>0.18.2</version>
         </dependency>
         <dependency>
