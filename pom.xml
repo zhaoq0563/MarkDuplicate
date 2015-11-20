@@ -72,7 +72,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>main.scala.MarkDuplicates</mainClass>
+                            <mainClass>main.scala.csadam.MarkDuplicates</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
