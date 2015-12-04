@@ -603,17 +603,17 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077")
       val sc = new SparkContext(conf)
       val ac = new ADAMContext(sc)
-      val readsrdd: RDD[AlignmentRecord] = ac.loadAlignments(input)
+      val readsRDD: RDD[AlignmentRecord] = ac.loadAlignments(input)
 
       // Get the header for building (pair/frag)Sort
-      val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsrdd).adamGetSequenceDictionary(false)
-      val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsrdd).adamGetReadGroupDictionary()
+      val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsRDD).adamGetSequenceDictionary(false)
+      val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsRDD).adamGetReadGroupDictionary()
       val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
       val libraryIdGenerator = new LibraryIdGenerator(header)
 
-      buildSortList(input, readsrdd, header, libraryIdGenerator)
+      buildSortList(input, readsRDD, header, libraryIdGenerator)
       generateDupIndexes(libraryIdGenerator)
-      writeToADAM(output, readsrdd, sc)
+      writeToADAM(output, readsRDD, sc)
 
       val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
 
