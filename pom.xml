@@ -16,6 +16,7 @@
         <hadoop.version>2.5.2</hadoop.version>
         <spark.version>1.5.1</spark.version>
         <parquet.version>1.8.1</parquet.version>
+        <avro.version>1.7.6</avro.version>
     </properties>
 
     <dependencies>
@@ -45,6 +46,11 @@
             <artifactId>scala-compiler</artifactId>
             <version>${scala.version}</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.parquet</groupId>
