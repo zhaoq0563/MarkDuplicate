@@ -21,7 +21,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
 import org.bdgenomics.adam.models.{RecordGroupDictionary, SAMFileHeaderWritable, SequenceDictionary}
 import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
-import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
+import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDictionaryRDDAggregator, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
 
@@ -604,6 +604,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val sc = new SparkContext(conf)
       val ac = new ADAMContext(sc)
       val readsRDD: RDD[AlignmentRecord] = ac.loadAlignments(input)
+
+      println("*** The alignments are loaded successfully! ***")
+      val testsave = new ADAMRDDFunctions(readsRDD)
+      testsave.adamParquetSave("hdfs://cdsc0:9000/user/qzhao/data/test.adam")
+      println("*** Test save successfully! ***")
 
       // Get the header for building (pair/frag)Sort
       val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsRDD).adamGetSequenceDictionary(false)
