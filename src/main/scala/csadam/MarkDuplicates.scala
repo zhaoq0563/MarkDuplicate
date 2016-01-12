@@ -44,14 +44,17 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     // Transform the rdd in ADAM format to our self customized format to build pair/frag Sort list
-    def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) = {
+    def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator, sc : SparkContext) = {
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
       val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
 
+      val samHeaderBroadcast = sc.broadcast(header)
+      val libraryIdGeneratorBroadcast = sc.broadcast(libraryIdGenerator)
+
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
       val readCSIndexRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
-        val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, header, libraryIdGenerator)
+        val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, samHeaderBroadcast.value, libraryIdGeneratorBroadcast.value)
 
         CSRecord
       }}
@@ -616,6 +619,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       //val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsRDD).adamGetSequenceDictionary(false)
       //val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsRDD).adamGetReadGroupDictionary()
       //val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
+
+      // One way to obtain the header
       val bwaIdx = new BWAIdxType
       val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
       bwaIdx.load(fastaLocalInputPath, 0)
@@ -626,7 +631,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, samFileHeader)
       val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
-      buildSortList(input, readsRDD, samFileHeader, libraryIdGenerator)
+      buildSortList(input, readsRDD, samFileHeader, libraryIdGenerator, sc)
       generateDupIndexes(libraryIdGenerator)
       writeToADAM(output, readsRDD, sc)
 
