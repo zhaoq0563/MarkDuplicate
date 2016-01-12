@@ -74,6 +74,13 @@
             <version>0.18.0</version>
         </dependency>
         <dependency>
+            <groupId>cs.ucla.edu</groupId>
+            <artifactId>cloud-scale-bwamem</artifactId>
+            <version>0.2.2</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/cloud-scale-bwamem-0.2.2-assembly.jar</systemPath>
+        </dependency>
+        <dependency>
             <groupId>com.github.broadinstitute</groupId>
             <artifactId>picard</artifactId>
             <version>1.14.0</version>
