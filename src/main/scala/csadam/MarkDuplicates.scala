@@ -43,18 +43,23 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       finish
     }
 
+    class samFileHeaderClass(sh : SAMFileHeader) extends java.io.Serializable {
+      val samFileHeader = sh
+    }
+
+    class libraryIdGeneratorClass(sh : SAMFileHeader) extends java.io.Serializable {
+      val libraryIdGenerator = new LibraryIdGenerator(sh)
+    }
+
     // Transform the rdd in ADAM format to our self customized format to build pair/frag Sort list
-    def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator, sc : SparkContext) = {
+    def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], header : samFileHeaderClass, libraryIdGenerator : libraryIdGeneratorClass) = {
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
 
       val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
 
-      val samHeaderBroadcast = sc.broadcast(header)
-      val libraryIdGeneratorBroadcast = sc.broadcast(libraryIdGenerator)
-
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
       val readCSIndexRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
-        val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, samHeaderBroadcast.value, libraryIdGeneratorBroadcast.value)
+        val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, header, libraryIdGenerator)
 
         CSRecord
       }}
@@ -130,10 +135,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Finish building pairSort and fragSort! ***")
     }
 
-    def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
+    def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : samFileHeaderClass, libraryIdGenerator : libraryIdGeneratorClass) : CSAlignmentRecord = {
       // Build one single CSAlignmentRecord for CSrdd with index
       val CSRecord : CSAlignmentRecord = new CSAlignmentRecord()
-      val readSAM : SAMRecord = new AlignmentRecordConverter().convert(read, new SAMFileHeaderWritable(header))
+      val readSAM : SAMRecord = new AlignmentRecordConverter().convert(read, new SAMFileHeaderWritable(header.samFileHeader))
 
       // Assign the flags of CSAlignmentRecord from SAMRecord
       CSRecord.readUnmappedFlag = readSAM.getReadUnmappedFlag
@@ -149,7 +154,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       CSRecord.readName = readSAM.getReadName
       CSRecord.attribute = readSAM.getAttribute("RG").toString
       CSRecord.score = DuplicateScoringStrategy.computeDuplicateScore(readSAM, ScoringStrategy.SUM_OF_BASE_QUALITIES)
-      CSRecord.libraryId = libraryIdGenerator.getLibraryId(readSAM)
+      CSRecord.libraryId = libraryIdGenerator.libraryIdGenerator.getLibraryId(readSAM)
       CSRecord.index = index
 
       CSRecord
@@ -291,7 +296,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Finish building pairSort and fragSort! ***")
     }*/
 
-    def buildReadEnds(header : SAMFileHeader, rec : CSAlignmentRecord, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
+    def buildReadEnds(header : samFileHeaderClass, rec : CSAlignmentRecord, libraryIdGenerator : libraryIdGeneratorClass) : ReadEndsForMarkDuplicates = {
       // Build the ReadEnd for each read in ADAM
       val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
       //val recSAM: SAMRecord = new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header))
@@ -317,7 +322,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
         val rg: String = rec.getAttribute
-        val readGroups : List[SAMReadGroupRecord] = header.getReadGroups
+        val readGroups : List[SAMReadGroupRecord] = header.samFileHeader.getReadGroups
         val it = readGroups.iterator
 
         if (rg != null && readGroups != null) {
@@ -629,13 +634,14 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val packageVersion = "v01"
       val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
       samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, samFileHeader)
-      val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
+      val header = new samFileHeaderClass(samFileHeader)
+      val libraryIdGenerator = new libraryIdGeneratorClass(samFileHeader)
 
-      buildSortList(input, readsRDD, samFileHeader, libraryIdGenerator, sc)
-      generateDupIndexes(libraryIdGenerator)
+      buildSortList(input, readsRDD, header, libraryIdGenerator)
+      generateDupIndexes(libraryIdGenerator.libraryIdGenerator)
       writeToADAM(output, readsRDD, sc)
 
-      val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
+      val numOpticalDuplicates = libraryIdGenerator.libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
 
       println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !")
       val t1 = System.nanoTime() : Double
