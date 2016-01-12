@@ -12,6 +12,8 @@ package main.scala.csadam
 
 import java.util.{Comparator, List, ArrayList}
 import java.io.File
+import cs.ucla.edu.bwaspark.datatype.BWAIdxType
+import cs.ucla.edu.bwaspark.sam.SAMHeader
 import main.scala.csadam.util.CSAlignmentRecord
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import htsjdk.samtools._
@@ -611,12 +613,20 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Test save successfully! ***")
 
       // Get the header for building (pair/frag)Sort
-      val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsRDD).adamGetSequenceDictionary(false)
-      val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsRDD).adamGetReadGroupDictionary()
-      val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
-      val libraryIdGenerator = new LibraryIdGenerator(header)
+      //val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsRDD).adamGetSequenceDictionary(false)
+      //val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsRDD).adamGetReadGroupDictionary()
+      //val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
+      val bwaIdx = new BWAIdxType
+      val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
+      bwaIdx.load(fastaLocalInputPath, 0)
+      val samHeader = new SAMHeader
+      val samFileHeader = new SAMFileHeader
+      val packageVersion = "v01"
+      val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
+      samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, samFileHeader)
+      val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
-      buildSortList(input, readsRDD, header, libraryIdGenerator)
+      buildSortList(input, readsRDD, samFileHeader, libraryIdGenerator)
       generateDupIndexes(libraryIdGenerator)
       writeToADAM(output, readsRDD, sc)
 
