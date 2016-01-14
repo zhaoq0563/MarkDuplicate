@@ -66,6 +66,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         CSRecord
       }}
 
+      println("*** Finish creating the CSAlignmentRecord! ***")
+
+      println("*** Start to collect data from CSAlignmentRecord RDD! ***")
+
+      // Collect the data from CSrdd and iterate them to build frag/pair Sort
+      val readArray : Array[CSAlignmentRecord] = readCSIndexRDD.collect()
+
       // Load the header and library first
       val bwaIdx = new BWAIdxType
       val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
@@ -77,8 +84,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, header)
       val libraryIdGenerator = new LibraryIdGenerator(header)
 
-      // Collect the data from CSrdd and iterate them to build frag/pair Sort
-      val readArray : Array[CSAlignmentRecord] = readCSIndexRDD.collect()
       for (readCSRecord <- readArray) {
         if (readCSRecord.getReadUnmappedFlag) {
           if (readCSRecord.getReferenceIndex == -1) {
