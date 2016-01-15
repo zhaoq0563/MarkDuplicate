@@ -1,10 +1,12 @@
 package main.scala.csadam.util
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 /**
  * Created by Qi Zhao on 11/14/15.
  */
 
-class CSAlignmentRecord {
+class CSAlignmentRecord extends Serializable{
   // Single alignment record for building frag/pair Sort
 
   // Flags needed for building frag/pair Sort
@@ -40,5 +42,47 @@ class CSAlignmentRecord {
   def getIndex = {this.index}
 
   def isSecondaryOrSupplementary = {this.secondaryOrSupplementary}
+
+  private def writeObject(out: ObjectOutputStream) {
+    out.writeBoolean(readUnmappedFlag)
+    out.writeBoolean(secondaryOrSupplementary)
+    out.writeObject(referenceIndex)
+    out.writeBoolean(readNegativeStrandFlag)
+    out.writeInt(unclippedEnd)
+    out.writeInt(unclippedStart)
+    out.writeBoolean(pairedFlag)
+    out.writeBoolean(firstOfPair)
+    out.writeBoolean(mateUnmappedFlag)
+    out.writeObject(mateReferenceIndex)
+    out.writeObject(readName)
+    out.writeObject(attribute)
+    out.writeShort(score)
+    out.writeShort(libraryId)
+    out.writeLong(index)
+
+  }
+
+  private def readObject(in: ObjectInputStream) {
+    readUnmappedFlag = in.readBoolean
+    secondaryOrSupplementary = in.readBoolean
+    referenceIndex = in.readObject().asInstanceOf[Integer]
+    readNegativeStrandFlag = in.readBoolean
+    unclippedEnd = in.readInt
+    unclippedStart = in.readInt
+    pairedFlag = in.readBoolean
+    firstOfPair = in.readBoolean
+    mateUnmappedFlag = in.readBoolean
+    mateReferenceIndex = in.readObject().asInstanceOf[Integer]
+    readName = in.readObject().asInstanceOf[String]
+    attribute = in.readObject().asInstanceOf[String]
+    score = in.readShort
+    libraryId = in.readShort
+    index = in.readLong
+
+  }
+
+  private def readObjectNoData() {
+
+  }
 
 }
