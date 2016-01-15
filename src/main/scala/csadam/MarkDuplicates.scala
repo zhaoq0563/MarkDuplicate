@@ -654,9 +654,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, samFileHeader)
       val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
-      println("*** Ready to collect alignment record from readsRDD! ***")
-      val readArray = readsRDD.collect()
-      println("*** Collecting successfully! ***")
+//      println("*** Ready to collect alignment record from readsRDD! ***")
+//      val readArray = readsRDD.collect()
+//      println("*** Collecting successfully! ***")
 
       buildSortList(input, readsRDD, sc)
       generateDupIndexes(libraryIdGenerator)
