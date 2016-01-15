@@ -655,7 +655,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
       println("*** Ready to collect alignment record from readsRDD! ***")
-      val readArray : Array[AlignmentRecord] = readsRDD.collect()
+      val readArray = readsRDD.collect()
       println("*** Collecting successfully! ***")
 
       buildSortList(input, readsRDD, sc)
