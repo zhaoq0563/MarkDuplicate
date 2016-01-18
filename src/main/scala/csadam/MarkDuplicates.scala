@@ -45,7 +45,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     // Transform the rdd in ADAM format to our self customized format to build pair/frag Sort list
     def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
-      println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***")
+      println("\n*** Start to process the ADAM file to collect the information of all the reads into variables! ***\n")
 
       val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
 
@@ -66,12 +66,16 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         CSRecord
       }}
 
-      println("*** Finish creating the CSAlignmentRecord! ***")
+      println("\n*** Finish creating the CSAlignmentRecord! ***\n")
 
-      println("*** Start to collect data from CSAlignmentRecord RDD! ***")
+      println("\n*** Start to collect data from CSAlignmentRecord RDD! ***\n")
+
+      readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
+
+      println("\n*** Save as text sucessfully! ***\n")
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
-      val readArray : Array[CSAlignmentRecord] = readCSIndexRDD.collect()
+      val readArray = readCSIndexRDD.collect()
 
       // Load the header and library first
       val bwaIdx = new BWAIdxType
@@ -622,8 +626,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val input = args(0)
       val output = args(1)
       //val headerinput = args(2)
-      println("*** The directory of input ADAM file             : " + input)
-      println("*** The directory of output ADAM file            : " + output)
+      println("\n*** The directory of input ADAM file             : " + input + "\n")
+      println("\n*** The directory of output ADAM file            : " + output + "\n")
       //println("*** The directory of input Fasta file for header : " + headerinput)
 
       val t0 = System.nanoTime : Double
@@ -633,12 +637,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val ac = new ADAMContext(sc)
       val readsRDD: RDD[AlignmentRecord] = ac.loadAlignments(input)
 
-      println("*** The alignments are loaded successfully! ***")
-      val testsave = new ADAMRDDFunctions(readsRDD)
-      testsave.adamParquetSave("hdfs://cdsc0:9000/user/qzhao/data/test.adam")
-      println("*** Test save successfully! ***")
+      println("\n*** The alignments are loaded successfully! ***\n")
+//      val testsave = new ADAMRDDFunctions(readsRDD)
+//      testsave.adamParquetSave("hdfs://cdsc0:9000/user/qzhao/data/test.adam")
+//      println("*** Test save successfully! ***")
 
-      // Get the header for building (pair/frag)Sort
       //val sd: SequenceDictionary = new ADAMSpecificRecordSequenceDictionaryRDDAggregator(readsRDD).adamGetSequenceDictionary(false)
       //val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsRDD).adamGetReadGroupDictionary()
       //val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
