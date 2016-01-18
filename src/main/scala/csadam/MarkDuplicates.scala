@@ -70,9 +70,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("\n*** Start to collect data from CSAlignmentRecord RDD! ***\n")
 
-      readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
+      readCSIndexRDD.take(100).foreach(println)
 
-      println("\n*** Save as text sucessfully! ***\n")
+//      readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
+
+      println("\n*** Save as text successfully ***\n")
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
       val readArray = readCSIndexRDD.collect()
