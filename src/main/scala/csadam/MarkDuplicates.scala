@@ -47,6 +47,12 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
       println("\n*** Start to process the ADAM file to collect the information of all the reads into variables! ***\n")
 
+      readsrdd.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
+
+      println("\n*** Finish saving the original adam rdd! ***\n")
+
+      println("\n*** Start to do mapping! ***\n")
+
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
       val readCSIndexRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         val bwaIdx = new BWAIdxType
@@ -65,7 +71,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         CSRecord
       }}
 
-      println("\n*** Finish creating the CSAlignmentRecord! ***\n")
+      println("\n*** Finish mapping to CSAlignmentRecord! ***\n")
 
       println("\n*** Start to collect data from CSAlignmentRecord RDD! ***\n")
 
@@ -74,7 +80,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //          println("This is a fking CSAlignment Record!")
 //      } )
 
-      readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
+      //readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
       println("\n*** Save as text successfully ***\n")
 
