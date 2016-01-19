@@ -47,14 +47,21 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
       println("\n*** Start to process the ADAM file to collect the information of all the reads into variables! ***\n")
 
-      readsrdd.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
+//      readsrdd.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
-      println("\n*** Finish saving the original adam rdd! ***\n")
+//      println("\n*** Finish saving the original adam rdd! ***\n")
 
       println("\n*** Start to do mapping! ***\n")
 
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
-      val readCSIndexRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
+
+      val readRDDwithZip = readsrdd.zipWithIndex()
+
+      println("\n*** Finish zip! ***\n")
+
+      println("\n*** Start map! ***\n")
+
+      val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
         val bwaIdx = new BWAIdxType
         val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
         bwaIdx.load(fastaLocalInputPath, 0)
@@ -82,10 +89,12 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       //readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
-      println("\n*** Save as text successfully ***\n")
+//      println("\n*** Save as text successfully ***\n")
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
       val readArray = readCSIndexRDD.collect()
+
+      println("\n*** Finish collecting! ***\n")
 
       // Load the header and library first
       val bwaIdx = new BWAIdxType
