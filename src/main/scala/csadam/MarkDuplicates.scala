@@ -47,8 +47,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
       println("\n*** Start to process the ADAM file to collect the information of all the reads into variables! ***\n")
 
-      val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
-
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
       val readCSIndexRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         val bwaIdx = new BWAIdxType
@@ -70,7 +68,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("\n*** Start to collect data from CSAlignmentRecord RDD! ***\n")
 
-      readCSIndexRDD.take(100).foreach(println)
+      readCSIndexRDD.foreach(x => printCSAlignmentRecord(x))
 
 //      readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
@@ -89,6 +87,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
       samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, header)
       val libraryIdGenerator = new LibraryIdGenerator(header)
+
+      val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
 
       for (readCSRecord <- readArray) {
         if (readCSRecord.getReadUnmappedFlag) {
@@ -182,6 +182,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       CSRecord.index = index
 
       CSRecord
+    }
+
+    def printCSAlignmentRecord(read : CSAlignmentRecord) = {
+      println(read.getAttribute + " , " + read.getFirstOfPairFlag + " , " + read.getIndex + " , " + read.getLibraryId + " , " + read.getMateReferenceIndex + " , " + read.getMateUnmappedFlag + " , " + read.getReadName + " , " + read.getReadNegativeStrandFlag + " , " + read.getReadPairedFlag + " , " + read.getReadUnmappedFlag + " , " + read.getReferenceIndex + " , " + read.getScore + " , " + read.getUnclippedEnd + " , " + read.getUnclippedStart + " , " + read.isSecondaryOrSupplementary + " !!!")
     }
 
     /*
