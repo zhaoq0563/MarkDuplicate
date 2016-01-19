@@ -68,7 +68,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("\n*** Start to collect data from CSAlignmentRecord RDD! ***\n")
 
-      readCSIndexRDD.foreach(x => printCSAlignmentRecord(x))
+      readCSIndexRDD.take(10).foreach(x => printCSAlignmentRecord(x))
 
 //      readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
