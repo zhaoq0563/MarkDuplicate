@@ -51,7 +51,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
 //      println("\n*** Finish saving the original adam rdd! ***\n")
 
-      println("\n*** Start to do mapping! ***\n")
+      println("\n*** Start zip\\\\\\! ***\n")
 
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
 
@@ -79,6 +79,15 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }}
 
       println("\n*** Finish mapping to CSAlignmentRecord! ***\n")
+
+      println("\n*** Start filter! ***\n")
+
+      val testdata = readCSIndexRDD.filter(x => (x.getIndex == 1))
+      val testarray = testdata.collect()
+
+      println("\n*** Finish filter! ***\n")
+
+      testarray.foreach(x => printCSAlignmentRecord(x))
 
       println("\n*** Start to collect data from CSAlignmentRecord RDD! ***\n")
 
