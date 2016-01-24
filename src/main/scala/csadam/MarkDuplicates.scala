@@ -12,12 +12,13 @@ package main.scala.csadam
 
 import java.util.{Comparator, List, ArrayList}
 import java.io.File
-import cs.ucla.edu.bwaspark.datatype.BWAIdxType
+import cs.ucla.edu.bwaspark.datatype.{BNTSeqType, BWAIdxType}
 import cs.ucla.edu.bwaspark.sam.SAMHeader
 import main.scala.csadam.util.CSAlignmentRecord
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import htsjdk.samtools._
 import htsjdk.samtools.util.{SortingCollection, SortingLongCollection}
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
@@ -44,7 +45,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     // Transform the rdd in ADAM format to our self customized format to build pair/frag Sort list
-    def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
+    def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], bns_bc : Broadcast[BNTSeqType], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator, sc : SparkContext) = {
       println("\n*** Start to process the ADAM file to collect the information of all the reads into variables! ***\n")
 
 //      readsrdd.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
@@ -62,15 +63,12 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("\n*** Start map! ***\n")
 
       val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
-        val bwaIdx = new BWAIdxType
-        val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
-        bwaIdx.load(fastaLocalInputPath, 0)
         val samHeader = new SAMHeader
         val samFileHeader = new SAMFileHeader
         val packageVersion = "v01"
         //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
         val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
-        samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, samFileHeader)
+        samHeader.bwaGenSAMHeader(bns_bc.value, packageVersion, readGroupString, samFileHeader)
         val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
         val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, samFileHeader, libraryIdGenerator)
@@ -80,14 +78,14 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("\n*** Finish mapping to CSAlignmentRecord! ***\n")
 
-      println("\n*** Start filter! ***\n")
-
-      val testdata = readCSIndexRDD.filter(x => (x.getIndex == 1))
-      val testarray = testdata.collect()
-
-      println("\n*** Finish filter! ***\n")
-
-      testarray.foreach(x => printCSAlignmentRecord(x))
+//      println("\n*** Start filter! ***\n")
+//
+//      val testdata = readCSIndexRDD.filter(x => (x.getIndex == 1))
+//      val testarray = testdata.collect()
+//
+//      println("\n*** Finish filter! ***\n")
+//
+//      testarray.foreach(x => printCSAlignmentRecord(x))
 
       println("\n*** Start to collect data from CSAlignmentRecord RDD! ***\n")
 
@@ -105,17 +103,17 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("\n*** Finish collecting! ***\n")
 
-      // Load the header and library first
-      val bwaIdx = new BWAIdxType
-      val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
-      bwaIdx.load(fastaLocalInputPath, 0)
-      val samHeader = new SAMHeader
-      val header = new SAMFileHeader
-      val packageVersion = "v01"
-      //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
-      val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
-      samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, header)
-      val libraryIdGenerator = new LibraryIdGenerator(header)
+//      // Load the header and library first
+//      val bwaIdx = new BWAIdxType
+//      val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
+//      bwaIdx.load(fastaLocalInputPath, 0)
+//      val samHeader = new SAMHeader
+//      val header = new SAMFileHeader
+//      val packageVersion = "v01"
+//      //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
+//      val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
+//      samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, header)
+//      val libraryIdGenerator = new LibraryIdGenerator(header)
 
       val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
 
@@ -681,10 +679,14 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       //val rgd: RecordGroupDictionary = new AlignmentRecordRDDFunctions(readsRDD).adamGetReadGroupDictionary()
       //val header: SAMFileHeader = new AlignmentRecordConverter().createSAMHeader(sd, rgd)
 
-      // One way to obtain the header
+      // Load bwaIdx in master node
       val bwaIdx = new BWAIdxType
       val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
       bwaIdx.load(fastaLocalInputPath, 0)
+
+      // Boardcast the bns
+      val bns_bc : Broadcast[BNTSeqType] = sc.broadcast(bwaIdx.bns)
+
       val samHeader = new SAMHeader
       val samFileHeader = new SAMFileHeader
       val packageVersion = "v01"
@@ -697,13 +699,15 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      val readArray = readsRDD.collect()
 //      println("*** Collecting successfully! ***")
 
-      buildSortList(input, readsRDD, sc)
-      generateDupIndexes(libraryIdGenerator)
+      buildSortList(input, readsRDD, bns_bc, samFileHeader, libraryIdGenerator, sc)
+      // @ Need to be done
+      //generateDupIndexes(libraryIdGenerator) // Passing bwaIdx_bc and access it on workers instead of creating a new one here
       writeToADAM(output, readsRDD, sc)
 
-      val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
+      // @ Need to be done
+      //val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
 
-      println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !")
+      //println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !")
       val t1 = System.nanoTime() : Double
 
       println("*** Mark duplicate has been successfully done! ***")
