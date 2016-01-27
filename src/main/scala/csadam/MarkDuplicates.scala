@@ -373,6 +373,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       ends.libraryId = rec.getLibraryId
 
+      println("\nThe name of Read is: " + rec.getReadName + "\n")
+
       if (opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
