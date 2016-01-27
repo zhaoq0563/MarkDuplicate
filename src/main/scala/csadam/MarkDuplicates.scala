@@ -212,7 +212,22 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     def printCSAlignmentRecord(read : CSAlignmentRecord) = {
-      println(read.getAttribute + " , " + read.getFirstOfPairFlag + " , " + read.getIndex + " , " + read.getLibraryId + " , " + read.getMateReferenceIndex + " , " + read.getMateUnmappedFlag + " , " + read.getReadName + " , " + read.getReadNegativeStrandFlag + " , " + read.getReadPairedFlag + " , " + read.getReadUnmappedFlag + " , " + read.getReferenceIndex + " , " + read.getScore + " , " + read.getUnclippedEnd + " , " + read.getUnclippedStart + " , " + read.isSecondaryOrSupplementary + " !!!")
+      println("\n*** The CSAlignment record has the following information:")
+      println("Attribute: " + read.getAttribute)
+      println("First of pair flag: " + read.getFirstOfPairFlag)
+      println("Index: " + read.getIndex)
+      println("Library Id: " + read.getLibraryId)
+      println("Mate reference index: " + read.getMateReferenceIndex)
+      println("Mate unmapped flag: " + read.getMateUnmappedFlag)
+      println("Read name: " + read.getReadName)
+      println("Read negative strand flag: " + read.getReadNegativeStrandFlag)
+      println("Read paired flag: " + read.getReadPairedFlag)
+      println("Read unmapped flag: " + read.getReadUnmappedFlag)
+      println("Reference index: " + read.getReferenceIndex)
+      println("Score: " + read.getScore)
+      println("Unclipped end: " + read.getUnclippedEnd)
+      println("Unclipped start: " + read.getUnclippedStart)
+      println("Is secondary or supplementary: " + read.isSecondaryOrSupplementary)
     }
 
     /*
@@ -373,7 +388,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       ends.libraryId = rec.getLibraryId
 
-      println("\nThe name of Read is: " + rec.getReadName + "\n")
+      //println("\nThe name of Read is: " + rec.getReadName + "\n")
+      printCSAlignmentRecord(rec)
 
       if (opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
         // calculate the RG number (nth in list)
