@@ -393,7 +393,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("\n*** Test opticalDuplicateFinder: " + (this.opticalDuplicateFinder == null))
 
-      if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
+      //if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
         val rg: String = rec.getAttribute
@@ -412,7 +412,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             else ends.readGroup = (ends.readGroup + 1).toShort
           }*/
         }
-      }
+      //}
 
       ends
     }
