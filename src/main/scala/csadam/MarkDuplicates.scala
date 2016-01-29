@@ -391,7 +391,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       //println("\nThe name of Read is: " + rec.getReadName + "\n")
       printCSAlignmentRecord(rec)
 
-      if (opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
+      println("\n*** Test opticalDuplicateFinder: " + (this.opticalDuplicateFinder == null))
+
+      if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
         val rg: String = rec.getAttribute
