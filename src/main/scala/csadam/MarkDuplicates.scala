@@ -15,6 +15,7 @@ import java.io.File
 import cs.ucla.edu.bwaspark.datatype.{BNTSeqType, BWAIdxType}
 import cs.ucla.edu.bwaspark.sam.SAMHeader
 import main.scala.csadam.util.CSAlignmentRecord
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import htsjdk.samtools._
 import htsjdk.samtools.util.{SortingCollection, SortingLongCollection}
@@ -38,6 +39,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
+    var LOG: Log = Log.getInstance(classOf[AbstractOpticalDuplicateFinderCommandLineProgram])
+    this.opticalDuplicateFinder = new OpticalDuplicateFinder(OpticalDuplicateFinder.DEFAULT_READ_NAME_REGEX, 100, LOG)
 
     override def doWork() : Int = {
       val finish: Int = 0
@@ -393,7 +396,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("\n*** Test opticalDuplicateFinder: " + (this.opticalDuplicateFinder == null))
 
-      //if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
+      if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
         val rg: String = rec.getAttribute
@@ -412,7 +415,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             else ends.readGroup = (ends.readGroup + 1).toShort
           }*/
         }
-      //}
+      }
 
       ends
     }
