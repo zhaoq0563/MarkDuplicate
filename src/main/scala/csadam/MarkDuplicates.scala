@@ -405,9 +405,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
         if (rg != null && readGroups != null) {
           while (it.hasNext) {
-            if (it.next.getReadGroupId.equals(rg))
-              break()
-            else ends.readGroup = (ends.readGroup + 1).toShort
+            if (!it.next.getReadGroupId.equals(rg))
+              ends.readGroup = (ends.readGroup + 1).toShort
           }
           /*for (readGroup : SAMReadGroupRecord <- readGroups) {
             if (readGroup.getReadGroupId.equals(rg))
