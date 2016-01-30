@@ -120,6 +120,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
 
+      println("\n*** Start to build pairSort and fragSort! ***\n")
+
       for (readCSRecord <- readArray) {
         if (readCSRecord.getReadUnmappedFlag) {
           if (readCSRecord.getReferenceIndex == -1) {
@@ -392,9 +394,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       ends.libraryId = rec.getLibraryId
 
       //println("\nThe name of Read is: " + rec.getReadName + "\n")
-      printCSAlignmentRecord(rec)
+      //printCSAlignmentRecord(rec)
 
-      println("\n*** Test opticalDuplicateFinder: " + (this.opticalDuplicateFinder == null))
+      //println("\n*** Test opticalDuplicateFinder: " + (this.opticalDuplicateFinder == null))
 
       if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
         // calculate the RG number (nth in list)
@@ -723,13 +725,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       buildSortList(input, readsRDD, bns_bc, samFileHeader, libraryIdGenerator, sc)
       // @ Need to be done
-      //generateDupIndexes(libraryIdGenerator) // Passing bwaIdx_bc and access it on workers instead of creating a new one here
+      generateDupIndexes(libraryIdGenerator) // Passing bwaIdx_bc and access it on workers instead of creating a new one here
       writeToADAM(output, readsRDD, sc)
 
       // @ Need to be done
-      //val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
+      val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
+      println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !")
 
-      //println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !")
       val t1 = System.nanoTime() : Double
 
       println("*** Mark duplicate has been successfully done! ***")
