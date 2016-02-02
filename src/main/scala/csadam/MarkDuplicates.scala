@@ -102,7 +102,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      println("\n*** Save as text successfully ***\n")
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
-      val readArray = readCSIndexRDD.take(50000)
+      val readArray = readCSIndexRDD.take(1000000)
 
       println("*** Finish collecting! ***\n")
 
