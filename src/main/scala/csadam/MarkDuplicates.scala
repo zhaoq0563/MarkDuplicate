@@ -49,21 +49,21 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     // Transform the rdd in ADAM format to our self customized format to build pair/frag Sort list
     def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], bns_bc : Broadcast[BNTSeqType], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator, sc : SparkContext) = {
-      println("\n*** Start to process the ADAM file to collect the information of all the reads into variables! ***\n")
+      println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***\n")
 
 //      readsrdd.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
 //      println("\n*** Finish saving the original adam rdd! ***\n")
 
-      println("\n*** Start zip! ***\n")
+      println("*** Start zip! ***\n")
 
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
 
       val readRDDwithZip = readsrdd.zipWithIndex()
 
-      println("\n*** Finish zip! ***\n")
+      println("*** Finish zip! ***\n")
 
-      println("\n*** Start map! ***\n")
+      println("*** Start map! ***\n")
 
       val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
         val samHeader = new SAMHeader
@@ -79,7 +79,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         CSRecord
       }}
 
-      println("\n*** Finish mapping to CSAlignmentRecord! ***\n")
+      println("*** Finish mapping to CSAlignmentRecord! ***\n")
 
 //      println("\n*** Start filter! ***\n")
 //
@@ -90,7 +90,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //
 //      testarray.foreach(x => printCSAlignmentRecord(x))
 
-      println("\n*** Start to collect data from CSAlignmentRecord RDD! ***\n")
+      println("*** Start to collect data from CSAlignmentRecord RDD! ***\n")
 
 //      readCSIndexRDD.foreach(x => {
 //        if (x.isInstanceOf[CSAlignmentRecord] == true)
@@ -102,9 +102,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      println("\n*** Save as text successfully ***\n")
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
-      val readArray = readCSIndexRDD.take(10000)
+      val readArray = readCSIndexRDD.take(50000)
 
-      println("\n*** Finish collecting! ***\n")
+      println("*** Finish collecting! ***\n")
 
 //      // Load the header and library first
 //      val bwaIdx = new BWAIdxType
@@ -120,7 +120,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
 
-      println("\n*** Start to build pairSort and fragSort! ***\n")
+      println("*** Start to build pairSort and fragSort! ***\n")
 
       for (readCSRecord <- readArray) {
         if (readCSRecord.getReadUnmappedFlag) {
@@ -188,7 +188,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       fragSort.doneAdding()
       pairSort.doneAdding()
 
-      println("*** Finish building pairSort and fragSort! ***")
+      println("*** Finish building pairSort and fragSort! ***\n")
     }
 
     def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
@@ -439,7 +439,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     def generateDupIndexes(libraryIdGenerator : LibraryIdGenerator) = {
       // Generate the duplicate indexes for remove duplicate reads
-      println("*** Start to generate duplicate indexes! ***")
+      println("*** Start to generate duplicate indexes! ***\n")
 
       var firstOfNextChunk : ReadEndsForMarkDuplicates = null
       val nextChunk = new java.util.ArrayList[ReadEndsForMarkDuplicates](200)
@@ -486,7 +486,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       fragSort.cleanup()
       fragSort = null
 
-      println("*** Finish generating duplicate indexes! ***")
+      println("*** Finish generating duplicate indexes! ***\n")
       duplicateIndexes.doneAddingStartIteration()
     }
 
@@ -591,14 +591,18 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     def writeToADAM(output : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
       // Write results to ADAM file on HDFS
-      println("*** Start to write reads back to ADAM file without duplicates! ***")
+      println("*** Start to write reads back to ADAM file without duplicates! ***\n")
 
       // Transform duplicateIndexes into HashTable
       val dpIndexes = new java.util.Hashtable[Long, Long]()
+      var dpCounter = 0
       while (duplicateIndexes.hasNext) {
         val value = duplicateIndexes.next
         dpIndexes.put(value, value)
+        dpCounter += 1
       }
+
+      println("*** The number of duplicate is: " + dpCounter + " !***\n")
       /*for (index <- duplicateIndexes) {
         dpIndexes.put(index, index)
       }*/
@@ -683,8 +687,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val input = args(0)
       val output = args(1)
       //val headerinput = args(2)
-      println("\n*** The directory of input ADAM file             : " + input + "\n")
-      println("\n*** The directory of output ADAM file            : " + output + "\n")
+      println("*** The directory of input ADAM file             : " + input + "\n")
+      println("*** The directory of output ADAM file            : " + output + "\n")
       //println("*** The directory of input Fasta file for header : " + headerinput)
 
       val t0 = System.nanoTime : Double
@@ -694,7 +698,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val ac = new ADAMContext(sc)
       val readsRDD: RDD[AlignmentRecord] = ac.loadAlignments(input)
 
-      println("\n*** The alignments are loaded successfully! ***\n")
+      println("*** The alignments are loaded successfully! ***\n")
 //      val testsave = new ADAMRDDFunctions(readsRDD)
 //      testsave.adamParquetSave("hdfs://cdsc0:9000/user/qzhao/data/test.adam")
 //      println("*** Test save successfully! ***")
@@ -730,11 +734,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       // @ Need to be done
       val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
-      println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !")
+      println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !***\n")
 
       val t1 = System.nanoTime() : Double
 
-      println("*** Mark duplicate has been successfully done! ***")
-      println("*** The total time for Mark Duplicate is : " + (t1-t0) / 1000000000.0 + "secs.")
+      println("*** Mark duplicate has been successfully done! ***\n")
+      println("*** The total time for Mark Duplicate is : " + (t1-t0) / 1000000000.0 + " secs.\n")
     }
 }
