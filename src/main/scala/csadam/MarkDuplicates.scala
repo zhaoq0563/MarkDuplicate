@@ -103,7 +103,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
       //val readArray = readCSIndexRDD.collect()
-      val readArray = readCSIndexRDD.take(2000000)
+      val readArray = readCSIndexRDD.take(4000000)
 
       println("*** Finish collecting! ***\n")
 
