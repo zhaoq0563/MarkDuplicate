@@ -10,11 +10,11 @@ import java.util.Queue
  * Created by Qi Zhao on 2/7/16.
  */
 
-class CSAlignmentQueuedMap[K, V](mapsize: Int) {
+class CSAlignmentQueuedMap[K, V](size: Int) {
 
   var MAX_SIZE : Int = 100000
-  var size : Int = mapsize
-  var values : Map[K, V] = new HashMap[K, V](this.size)
+  var mapsize : Int = size
+  var values : Map[K, V] = new HashMap[K, V](this.mapsize)
   var keys : Queue[K] = new LinkedList[K]()
 
   def checkValid(size : Int) : Unit = {
@@ -31,15 +31,15 @@ class CSAlignmentQueuedMap[K, V](mapsize: Int) {
       throw new NullPointerException("Cannot insert a null for either key or value")
 
     // First see if we already have this key in our queue
-    if(this.keys.contains(key)){
+    //if(this.keys.contains(key)){
       // Key found.
       // Simply replace the value in Map
-      this.values.put(key, value)
-    }else {
+      //this.values.put(key, value)
+    //}else {
       // Key not found
       // Add value to both Queue and Map
-      this.enqueue(key, value)
-    }
+    this.enqueue(key, value)
+    //}
   }
 
   def getItem(key : K) : V = {
@@ -70,7 +70,7 @@ class CSAlignmentQueuedMap[K, V](mapsize: Int) {
   }
 
   def enqueue(key : K, value : V) = {
-    if (this.keys.size() < this.size) {
+    if (this.keys.size() < this.mapsize) {
       // We still have space in the queue
       // Add they entry in both queue and the Map
       if (this.keys.add(key)) {
