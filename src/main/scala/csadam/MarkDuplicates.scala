@@ -126,7 +126,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Start to build pairSort and fragSort! ***\n")
 
       for (readCSRecord <- readArray) {
-        println("Process on: " + readCSRecord.getIndex)
+        if(readCSRecord.getIndex % 100000 == 0) println("Process on: " + readCSRecord.getIndex)
         if (readCSRecord.getReadUnmappedFlag) {
           if (readCSRecord.getReferenceIndex == -1) {
             break()
@@ -140,7 +140,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             val checkPair = findMate(tmp, key)
             if (checkPair == null) {
               tmp.addItem(key, readCSRecord)
-              println("Temp size: " + tmp.length())
+              //println("Temp size: " + tmp.length())
             } else {
               val sequence : Int = fragmentEnd.read1IndexInFile.asInstanceOf[Int]
               val coordinate : Int = fragmentEnd.read1Coordinate
