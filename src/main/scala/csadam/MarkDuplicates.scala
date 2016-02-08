@@ -169,6 +169,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         }
       }
 
+      DiskBasedReadEndsForMarkDuplicatesMap
       /*
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         val fragmentEnd = buildFragSort(read, index, header, libraryIdGenerator)
