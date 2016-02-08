@@ -14,8 +14,8 @@ import java.util.{Comparator, List, ArrayList}
 import java.io.File
 import cs.ucla.edu.bwaspark.datatype.{BNTSeqType, BWAIdxType}
 import cs.ucla.edu.bwaspark.sam.SAMHeader
-import main.scala.csadam.util.CSAlignmentRecord
-import htsjdk.samtools.util.Log;
+import main.scala.csadam.util.{CSAlignmentQueuedMap, CSAlignmentRecord}
+import htsjdk.samtools.util.Log
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import htsjdk.samtools._
 import htsjdk.samtools.util.{SortingCollection, SortingLongCollection}
@@ -40,6 +40,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
     var LOG: Log = Log.getInstance(classOf[AbstractOpticalDuplicateFinderCommandLineProgram])
+    val MAX_NUMBER_FOR_READ_MAP : Int = 8000
     this.opticalDuplicateFinder = new OpticalDuplicateFinder(OpticalDuplicateFinder.DEFAULT_READ_NAME_REGEX, 100, LOG)
 
     override def doWork() : Int = {
@@ -119,7 +120,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, header)
 //      val libraryIdGenerator = new LibraryIdGenerator(header)
 
-      val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
+      //val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
+      val tmp : CSAlignmentQueuedMap[String, CSAlignmentRecord] = new CSAlignmentQueuedMap[String, CSAlignmentRecord](MAX_NUMBER_FOR_READ_MAP)
 
       println("*** Start to build pairSort and fragSort! ***\n")
 
@@ -133,9 +135,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           fragSort.add(fragmentEnd)
 
           if (readCSRecord.getReadPairedFlag && !readCSRecord.getMateUnmappedFlag) {
-            val checkPair = findMate(tmp, readCSRecord.getReferenceIndex, readCSRecord.getReadName)
+            val key = readCSRecord.getReferenceIndex.toString + readCSRecord.getReadName
+            val checkPair = findMate(tmp, key)
             if (checkPair == null) {
-              tmp.add(readCSRecord)
+              tmp.addItem(key, readCSRecord)
             } else {
               val sequence : Int = fragmentEnd.read1IndexInFile.asInstanceOf[Int]
               val coordinate : Int = fragmentEnd.read1Coordinate
@@ -169,7 +172,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         }
       }
 
-      DiskBasedReadEndsForMarkDuplicatesMap
       /*
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         val fragmentEnd = buildFragSort(read, index, header, libraryIdGenerator)
@@ -423,20 +425,21 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       ends
     }
 
-    def findMate (tmp : ArrayList[CSAlignmentRecord], referenceIndex : Integer, readName : String) : CSAlignmentRecord = {
+    def findMate (tmp : CSAlignmentQueuedMap[String, CSAlignmentRecord], key : String) : CSAlignmentRecord = {
       // Find out the paired read that was already been processed but did not find their mate
       // Return the read or return null if no finding
-      val it = tmp.iterator
-      while (it.hasNext) {
-        val tmpRecord : CSAlignmentRecord = it.next
-        if (tmpRecord.getReferenceIndex == referenceIndex && tmpRecord.getReadName == readName)
-          tmpRecord
-      }
+      val mate = tmp.remove(key)
+//      val it = tmp.iterator
+//      while (it.hasNext) {
+//        val tmpRecord : CSAlignmentRecord = it.next
+//        if (tmpRecord.getReferenceIndex == referenceIndex && tmpRecord.getReadName == readName)
+//          tmpRecord
+//      }
       /*for (target : CSAlignmentRecord <- tmp) {
         if (target.getReferenceIndex == referenceIndex && target.getReadName == readName)
           target
       }*/
-      null
+      mate
     }
 
     def generateDupIndexes(libraryIdGenerator : LibraryIdGenerator) = {

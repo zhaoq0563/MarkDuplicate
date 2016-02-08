@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="cloud-scale-bwamem-0.2.2-assembly">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/cloud-scale-bwamem-0.2.2-assembly.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/cloud-scale-bwamem-0.2.2-assembly.jar!/" />
+    </SOURCES>
+  </library>
+</component>

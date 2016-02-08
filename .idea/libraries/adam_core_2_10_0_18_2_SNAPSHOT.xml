@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="adam-core_2.10-0.18.2-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/adam/adam/adam-core/target/adam-core_2.10-0.18.2-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

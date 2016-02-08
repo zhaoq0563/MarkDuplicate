@@ -12,5 +12,6 @@
     <orderEntry type="library" name="spark-assembly-1.5.1-hadoop2.4.0" level="project" />
     <orderEntry type="library" name="adam-cli_2.10-0.18.2-SNAPSHOT" level="project" />
     <orderEntry type="library" name="adam-core_2.10-0.18.2-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="cloud-scale-bwamem-0.2.2-assembly" level="project" />
   </component>
 </module>
