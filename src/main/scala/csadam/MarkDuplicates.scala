@@ -55,6 +55,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      readsrdd.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
 //      println("\n*** Finish saving the original adam rdd! ***\n")
+      println("The number of elements in the orginal RDD is: " + readsrdd.count() + "\n")
 
       println("*** Start zip! ***\n")
 
@@ -104,11 +105,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
       val readArray = readCSIndexRDD.collect()
-      println("The size of the read array is: " + readArray.length)
+      println("The size of the read array is: " + readArray.length + "\n")
       //val readArray = readCSIndexRDD.take(10000)
 
       println("*** Finish collecting! ***\n")
-
+'
 //      // Load the header and library first
 //      val bwaIdx = new BWAIdxType
 //      val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
