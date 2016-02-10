@@ -127,9 +127,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Start to build pairSort and fragSort! ***\n")
 
       for (readCSRecord <- readArray) {
-        if(readCSRecord.getIndex % 100000 == 0) println("Process on: " + readCSRecord.getIndex)
+        if(readCSRecord.getIndex % 1000000 == 0) println("Process on: " + readCSRecord.getIndex)
         if (readCSRecord.getReadUnmappedFlag) {
           if (readCSRecord.getReferenceIndex == -1) {
+            println("We are breaking from this point: " + readCSRecord.getIndex + " & the reference index is: " + readCSRecord.getReferenceIndex + "\n")
             break()
           }
         } else if (!readCSRecord.isSecondaryOrSupplementary) {
