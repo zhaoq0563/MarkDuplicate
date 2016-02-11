@@ -496,6 +496,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       fragSort = null
 
       println("*** Finish generating duplicate indexes! ***\n")
+      println("*** The number of duplicates is: " + this.numDuplicateIndices + "\n")
       duplicateIndexes.doneAddingStartIteration()
     }
 
@@ -702,7 +703,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val t0 = System.nanoTime : Double
 
-      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077").set("spark.driver.maxResultSize", "120G").set("spark.network.timeout", "500s").set("spark.cores.max", "300")
+      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077").set("spark.driver.maxResultSize", "100G").set("spark.network.timeout", "500s").set("spark.cores.max", "500")
       val sc = new SparkContext(conf)
       val ac = new ADAMContext(sc)
       val readsRDD: RDD[AlignmentRecord] = ac.loadAlignments(input)
