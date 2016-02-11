@@ -496,7 +496,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       fragSort = null
 
       println("*** Finish generating duplicate indexes! ***\n")
-      println("*** The number of duplicates is: " + this.numDuplicateIndices + "\n")
+      println("*** [REAL]The number of duplicate is: " + this.numDuplicateIndices + "\n")
       duplicateIndexes.doneAddingStartIteration()
     }
 
@@ -612,7 +612,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         dpCounter += 1
       }
 
-      println("*** The number of duplicate is: " + dpCounter + " !***\n")
+      println("*** [COUNT]The number of duplicate is: " + dpCounter + " !***\n")
       /*for (index <- duplicateIndexes) {
         dpIndexes.put(index, index)
       }*/
@@ -622,8 +622,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         if (broadcastDpIndexes.value.contains(index)) {
-          read.setDuplicateRead(true)
-        } else read.setDuplicateRead(false)
+          read.setDuplicateRead(boolean2Boolean(true))
+        } else read.setDuplicateRead(boolean2Boolean(false))
         read
       }}
 
@@ -654,6 +654,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // Use the filter function to get rid of those reads contains indexes in the duplicateIndexes
       val saveADAMRDDFilter = readADAMRDD.filter(read  => read.getDuplicateRead.equals(false))
       val saveADAMRDD = new ADAMRDDFunctions(saveADAMRDDFilter)
+      println("*** The number of reads after mark duplicate: " + saveADAMRDDFilter.count() + "\n")
       saveADAMRDD.adamParquetSave(output)
     }
 
