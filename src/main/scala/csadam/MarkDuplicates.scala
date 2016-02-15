@@ -14,6 +14,7 @@ import java.util.{Comparator, List, ArrayList}
 import java.io.File
 import cs.ucla.edu.bwaspark.datatype.{BNTSeqType, BWAIdxType}
 import cs.ucla.edu.bwaspark.sam.SAMHeader
+import htsjdk.samtools
 import main.scala.csadam.util.{CSAlignmentQueuedMap, CSAlignmentRecord}
 import htsjdk.samtools.util.Log
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
@@ -121,6 +122,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, header)
 //      val libraryIdGenerator = new LibraryIdGenerator(header)
 
+      DiskBasedReadEndsForMarkDuplicatesMap
+
       //val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
       val tmp : CSAlignmentQueuedMap[String, CSAlignmentRecord] = new CSAlignmentQueuedMap[String, CSAlignmentRecord](MAX_NUMBER_FOR_READ_MAP)
 
@@ -129,10 +132,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       for (readCSRecord <- readArray) {
         if(readCSRecord.getIndex % 1000000 == 0) println("Process on: " + readCSRecord.getIndex)
         if (readCSRecord.getReadUnmappedFlag) {
-//          if (readCSRecord.getReferenceIndex == -1) {
-//            println("We are breaking from this point: " + readCSRecord.getIndex + " & the reference index is: " + readCSRecord.getReferenceIndex + "\n")
-//            break()
-//          }
+          if (readCSRecord.getReferenceIndex == -1) {
+            println("We are breaking from this point: " + readCSRecord.getIndex + " & the reference index is: " + readCSRecord.getReferenceIndex + "\n")
+            break()
+          }
         } else if (!readCSRecord.isSecondaryOrSupplementary) {
           val fragmentEnd = buildReadEnds(header, readCSRecord, libraryIdGenerator)
           fragSort.add(fragmentEnd)
@@ -141,7 +144,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             val key = readCSRecord.getReferenceIndex.toString + readCSRecord.getReadName
             val checkPair = findMate(tmp, key)
             if (checkPair == null) {
-              tmp.addItem(key, readCSRecord)
+              tmp.addItem((readCSRecord.getMateReferenceIndex + readCSRecord.getReadName), readCSRecord)
               //println("Temp size: " + tmp.length())
             } else {
               val sequence : Int = fragmentEnd.read1IndexInFile.asInstanceOf[Int]
@@ -214,12 +217,14 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       CSRecord.pairedFlag = readSAM.getReadPairedFlag
       CSRecord.firstOfPair = readSAM.getFirstOfPairFlag
       CSRecord.mateUnmappedFlag = readSAM.getMateUnmappedFlag
-      CSRecord.mateReferenceIndex = readSAM.getMateReferenceIndex
       CSRecord.readName = readSAM.getReadName
       CSRecord.attribute = readSAM.getAttribute("RG").toString
       CSRecord.score = DuplicateScoringStrategy.computeDuplicateScore(readSAM, ScoringStrategy.SUM_OF_BASE_QUALITIES)
       CSRecord.libraryId = libraryIdGenerator.getLibraryId(readSAM)
       CSRecord.index = index
+
+      if(readSAM.getReadPairedFlag && !readSAM.getMateUnmappedFlag)
+        CSRecord.mateReferenceIndex = readSAM.getMateReferenceIndex
 
       CSRecord
     }
