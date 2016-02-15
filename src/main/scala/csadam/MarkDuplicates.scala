@@ -122,7 +122,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, header)
 //      val libraryIdGenerator = new LibraryIdGenerator(header)
 
-      DiskBasedReadEndsForMarkDuplicatesMap
 
       //val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
       val tmp : CSAlignmentQueuedMap[String, CSAlignmentRecord] = new CSAlignmentQueuedMap[String, CSAlignmentRecord](MAX_NUMBER_FOR_READ_MAP)
