@@ -25,6 +25,16 @@ class CSAlignmentRecord extends Serializable{
   var score : Short = _
   var libraryId : Short = _
   var index : Long = _
+  // For Sort list
+  var read1ReferenceIndex : Int = _
+  var read2ReferenceIndex : Int = -1
+  var read1Coordinate : Int = _
+  var orientation : Byte = _
+  var read1IndexInFile : Long = _
+  var readGroup : Short = _
+  var tile: Short = -1
+  var x: Short = -1
+  var y: Short = -1
 
   def getReadUnmappedFlag = {this.readUnmappedFlag}
   def getReferenceIndex = {this.referenceIndex}
@@ -40,6 +50,17 @@ class CSAlignmentRecord extends Serializable{
   def getScore = {this.score}
   def getLibraryId = {this.libraryId}
   def getIndex = {this.index}
+  // For Sort list
+  def getRead1ReferenceIndex = {this.read1ReferenceIndex}
+  def getRead2ReferenceIndex = {this.read2ReferenceIndex}
+  def getRead1Coordinate = {this.read1Coordinate}
+  def getOrientation = {this.orientation}
+  def getRead1IndexInFile = {this.read1IndexInFile}
+  def getReadGroup = {this.readGroup}
+  def getTile = {this.tile}
+  def getX = {this.x}
+  def getY = {this.y}
+  def isPaired = {(this.read2ReferenceIndex != -1)}
 
   def isSecondaryOrSupplementary = {this.secondaryOrSupplementary}
 
@@ -59,6 +80,15 @@ class CSAlignmentRecord extends Serializable{
     out.writeShort(score)
     out.writeShort(libraryId)
     out.writeLong(index)
+    out.writeInt(read1ReferenceIndex)
+    out.writeInt(read2ReferenceIndex)
+    out.writeInt(read1Coordinate)
+    out.writeByte(orientation)
+    out.writeLong(read1IndexInFile)
+    out.writeShort(readGroup)
+    out.writeShort(tile)
+    out.writeShort(x)
+    out.writeShort(y)
 
   }
 
@@ -78,6 +108,15 @@ class CSAlignmentRecord extends Serializable{
     score = in.readShort
     libraryId = in.readShort
     index = in.readLong
+    read1ReferenceIndex = in.readInt()
+    read2ReferenceIndex = in.readInt()
+    read1Coordinate = in.readInt()
+    orientation = in.readByte()
+    read1IndexInFile = in.readLong()
+    readGroup = in.readShort()
+    tile = in.readShort()
+    x = in.readShort()
+    y = in.readShort()
 
   }
 

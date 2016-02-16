@@ -30,7 +30,6 @@ import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDicti
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
 
-import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks.break
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
@@ -39,7 +38,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     val tempDir = new File(System.getProperty("java.io.tmpdir"))
     var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
     //var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
-    var fragSort = Array[ReadEndsForMarkDuplicates]()
+    var fragSort = Array[CSAlignmentRecord]()
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
     var LOG: Log = Log.getInstance(classOf[AbstractOpticalDuplicateFinderCommandLineProgram])
@@ -104,7 +103,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         samHeader.bwaGenSAMHeader(bns_bc.value, packageVersion, readGroupString, samFileHeader)
         val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
-        val fragmentEnd = buildReadEnds(header, read, libraryIdGenerator)
+        val fragmentEnd = buildFragSortRead(header, read, libraryIdGenerator)
 
         fragmentEnd
       }
@@ -441,16 +440,61 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             if (!it.next.getReadGroupId.equals(rg))
               ends.readGroup = (ends.readGroup + 1).toShort
           }
-          /*for (readGroup : SAMReadGroupRecord <- readGroups) {
-            if (readGroup.getReadGroupId.equals(rg))
-              break()
-            else ends.readGroup = (ends.readGroup + 1).toShort
-          }*/
         }
       }
 
       ends
     }
+
+  def buildFragSortRead(header : SAMFileHeader, rec : CSAlignmentRecord, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
+    rec.read1ReferenceIndex = Integer2int(rec.getReferenceIndex)
+    if (rec.getReadNegativeStrandFlag) {
+      rec.read1Coordinate = rec.getUnclippedEnd
+      rec.orientation = ReadEnds.R
+    } else {
+      rec.read1Coordinate = rec.getUnclippedStart
+      rec.orientation = ReadEnds.F
+    }
+    rec.read1IndexInFile = rec.getIndex
+    if (rec.getReadPairedFlag && !rec.getMateUnmappedFlag)
+      rec.read2ReferenceIndex = rec.getMateReferenceIndex.asInstanceOf[Int]
+
+    // Build one ReadEndsForMarkDuplicates for filling in optical duplicate location information
+    val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
+    ends.read1ReferenceIndex = Integer2int(rec.getReferenceIndex)
+    if (rec.getReadNegativeStrandFlag) {
+      ends.read1Coordinate = rec.getUnclippedEnd
+      ends.orientation = ReadEnds.R
+    } else {
+      ends.read1Coordinate = rec.getUnclippedStart
+      ends.orientation = ReadEnds.F
+    }
+    ends.read1IndexInFile = rec.getIndex
+    ends.score = rec.getScore
+    if (rec.getReadPairedFlag && !rec.getMateUnmappedFlag)
+      ends.read2ReferenceIndex = rec.getMateReferenceIndex.asInstanceOf[Int]
+    ends.libraryId = rec.getLibraryId
+
+    if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
+      // calculate the RG number (nth in list)
+      rec.tile = ends.getTile
+      rec.x = ends.x
+      rec.y = ends.y
+      rec.readGroup = 0
+      val rg: String = rec.getAttribute
+      val readGroups : List[SAMReadGroupRecord] = header.getReadGroups
+      val it = readGroups.iterator
+
+      if (rg != null && readGroups != null) {
+        while (it.hasNext) {
+          if (!it.next.getReadGroupId.equals(rg))
+            rec.readGroup = (rec.readGroup + 1).toShort
+        }
+      }
+    }
+
+    rec
+  }
 
     def findMate (tmp : CSAlignmentQueuedMap[String, CSAlignmentRecord], key : String) : CSAlignmentRecord = {
       // Find out the paired read that was already been processed but did not find their mate
@@ -497,24 +541,27 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       var containsPairs : Boolean = false
       var containsFrags : Boolean = false
+      var firstOfNextChunkF : CSAlignmentRecord = null
+      val nextChunkF = new java.util.ArrayList[CSAlignmentRecord](200)
 
       val itFragSort = fragSort.iterator
       while (itFragSort.hasNext) {
-        val next : ReadEndsForMarkDuplicates = itFragSort.next
-        if (firstOfNextChunk != null && areComparableForDuplicates(firstOfNextChunk, next, false : Boolean)) {
-          nextChunk.add(next)
+        //val next : ReadEndsForMarkDuplicates = itFragSort.next
+        val next : CSAlignmentRecord = itFragSort.next
+        if (firstOfNextChunk != null && areComparableForDuplicatesF(firstOfNextChunkF, next)) {
+          nextChunkF.add(next)
           containsPairs = containsPairs || next.isPaired
           containsFrags = containsFrags || !next.isPaired
         } else {
-          if (nextChunk.size() > 1 && containsFrags) markDuplicateFragments(nextChunk, containsPairs)
-          nextChunk.clear()
-          nextChunk.add(next)
-          firstOfNextChunk = next
+          if (nextChunkF.size() > 1 && containsFrags) markDuplicateFragmentsF(nextChunkF, containsPairs)
+          nextChunkF.clear()
+          nextChunkF.add(next)
+          firstOfNextChunkF = next
           containsPairs = next.isPaired
           containsFrags = !next.isPaired
         }
       }
-      markDuplicateFragments(nextChunk, containsPairs)
+      markDuplicateFragmentsF(nextChunkF, containsPairs)
       //fragSort.cleanup()
       fragSort = null
 
@@ -532,6 +579,12 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       retval
     }
+
+  def areComparableForDuplicatesF(lhs : CSAlignmentRecord, rhs : CSAlignmentRecord) : Boolean = {
+    var retval: Boolean = (lhs.libraryId == rhs.libraryId) && (lhs.read1ReferenceIndex == rhs.read1ReferenceIndex) && (lhs.read1Coordinate == rhs.read1Coordinate) && (lhs.orientation == rhs.orientation)
+
+    retval
+  }
 
     def addIndexAsDuplicate(bamIndex : Long) = {
       duplicateIndexes.add(bamIndex)
@@ -621,6 +674,34 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         }*/
       }
     }
+
+  def markDuplicateFragmentsF(list : java.util.ArrayList[CSAlignmentRecord], containsPairs : Boolean) = {
+    if (containsPairs) {
+      val it1st = list.iterator
+      while (it1st.hasNext) {
+        val end = it1st.next
+        if (!end.isPaired) addIndexAsDuplicate(end.read1IndexInFile)
+      }
+    } else {
+      var maxScore : Short = 0
+      var best : CSAlignmentRecord = null
+      val it2nd = list.iterator
+      while (it2nd.hasNext) {
+        val end = it2nd.next
+        if (end.score > maxScore || best == null) {
+          maxScore = end.score
+          best = end
+        }
+      }
+      val it3rd = list.iterator
+      while (it3rd.hasNext) {
+        val end = it3rd.next
+        if (end != best) {
+          addIndexAsDuplicate(end.read1IndexInFile)
+        }
+      }
+    }
+  }
 
     def writeToADAM(output : String, readsrdd : RDD[AlignmentRecord], sc : SparkContext) = {
       // Write results to ADAM file on HDFS
