@@ -85,15 +85,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("*** Finish mapping to CSAlignmentRecord! ***\n")
 
-//      println("\n*** Start filter! ***\n")
-//
-//      val testdata = readCSIndexRDD.filter(x => (x.getIndex == 1))
-//      val testarray = testdata.collect()
-//
-//      println("\n*** Finish filter! ***\n")
-//
-//      testarray.foreach(x => printCSAlignmentRecord(x))
-
       val fragSortRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => !(read.isSecondaryOrSupplementary)}.map{read : CSAlignmentRecord =>
         val samHeader = new SAMHeader
         val samFileHeader = new SAMFileHeader
@@ -119,13 +110,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
 //      println("\n*** Save as text successfully ***\n")
 
+      fragSort = fragSortRDD.collect()
+      println("The size of the fragSort is: " + fragSort.length + "\n")
+
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
       val readArray = readCSIndexRDD.collect()
       println("The size of the read array is: " + readArray.length + "\n")
       //val readArray = readCSIndexRDD.take(10000)
-
-      fragSort = fragSortRDD.collect()
-      println("The size of the fragSort is: " + fragSort.length + "\n")
 
       println("*** Finish collecting! ***\n")
 //      // Load the header and library first
