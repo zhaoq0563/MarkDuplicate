@@ -29,7 +29,9 @@ import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
 import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDictionaryRDDAggregator, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
+import sun.util.resources.sr.CurrencyNames_sr_RS
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks.break
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
@@ -37,7 +39,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     var maxInMemory : Int = (Runtime.getRuntime.maxMemory() * 0.5 / ReadEndsForMarkDuplicates.SIZE_OF).toInt
     val tempDir = new File(System.getProperty("java.io.tmpdir"))
     var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
-    var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
+    //var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
+    var fragSort = Array[ReadEndsForMarkDuplicates]()
     var duplicateIndexes = new SortingLongCollection(100000)
     var numDuplicateIndices : Int = 0
     var LOG: Log = Log.getInstance(classOf[AbstractOpticalDuplicateFinderCommandLineProgram])
@@ -93,6 +96,20 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //
 //      testarray.foreach(x => printCSAlignmentRecord(x))
 
+      val fragSortRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => !(read.isSecondaryOrSupplementary)}.map{read : CSAlignmentRecord =>
+        val samHeader = new SAMHeader
+        val samFileHeader = new SAMFileHeader
+        val packageVersion = "v01"
+        //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
+        val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
+        samHeader.bwaGenSAMHeader(bns_bc.value, packageVersion, readGroupString, samFileHeader)
+        val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
+
+        val fragmentEnd = buildReadEnds(header, read, libraryIdGenerator)
+
+        fragmentEnd
+      }
+
       println("*** Start to collect data from CSAlignmentRecord RDD! ***\n")
 
 //      readCSIndexRDD.foreach(x => {
@@ -108,6 +125,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val readArray = readCSIndexRDD.collect()
       println("The size of the read array is: " + readArray.length + "\n")
       //val readArray = readCSIndexRDD.take(10000)
+
+      fragSort = fragSortRDD.collect()
+      println("The size of the fragSort is: " + fragSort.length + "\n")
 
       println("*** Finish collecting! ***\n")
 //      // Load the header and library first
@@ -137,7 +157,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           }
         } else if (!readCSRecord.isSecondaryOrSupplementary) {
           val fragmentEnd = buildReadEnds(header, readCSRecord, libraryIdGenerator)
-          fragSort.add(fragmentEnd)
+          //fragSort.add(fragmentEnd)
 
           if (readCSRecord.getReadPairedFlag && !readCSRecord.getMateUnmappedFlag) {
             val key = readCSRecord.getReferenceIndex.toString + readCSRecord.getReadName
@@ -195,7 +215,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       }
       pairSort.doneAdding()*/
 
-      fragSort.doneAdding()
+      //fragSort.doneAdding()
       pairSort.doneAdding()
 
       println("*** Finish building pairSort and fragSort! ***\n")
@@ -496,7 +516,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         }
       }
       markDuplicateFragments(nextChunk, containsPairs)
-      fragSort.cleanup()
+      //fragSort.cleanup()
       fragSort = null
 
       println("*** Finish generating duplicate indexes! ***\n")
