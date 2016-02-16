@@ -29,7 +29,6 @@ import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
 import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDictionaryRDDAggregator, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
-import sun.util.resources.sr.CurrencyNames_sr_RS
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks.break
