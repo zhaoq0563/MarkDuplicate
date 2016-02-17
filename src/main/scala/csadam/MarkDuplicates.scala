@@ -85,7 +85,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("*** Finish mapping to CSAlignmentRecord! ***\n")
 
-      val fragSortRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => !(read.isSecondaryOrSupplementary)}.map{read : CSAlignmentRecord =>
+      val fragSortRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => (!(read.getReadUnmappedFlag) && !(read.isSecondaryOrSupplementary))}.map{read : CSAlignmentRecord =>
         val samHeader = new SAMHeader
         val samFileHeader = new SAMFileHeader
         val packageVersion = "v01"
@@ -108,43 +108,31 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       //readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
-//      println("\n*** Save as text successfully ***\n")
+//      println("\n*** Save as text successfully ***\n"
 
       fragSort = fragSortRDD.collect()
       println("The size of the fragSort is: " + fragSort.length + "\n")
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
-      val readArray = readCSIndexRDD.collect()
-      println("The size of the read array is: " + readArray.length + "\n")
+      //val readArray = readCSIndexRDD.collect()
+      //println("The size of the read array is: " + readArray.length + "\n")
       //val readArray = readCSIndexRDD.take(10000)
 
       println("*** Finish collecting! ***\n")
-//      // Load the header and library first
-//      val bwaIdx = new BWAIdxType
-//      val fastaLocalInputPath = "/space/scratch/ReferenceMetadata/human_g1k_v37.fasta"
-//      bwaIdx.load(fastaLocalInputPath, 0)
-//      val samHeader = new SAMHeader
-//      val header = new SAMFileHeader
-//      val packageVersion = "v01"
-//      //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
-//      val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
-//      samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, header)
-//      val libraryIdGenerator = new LibraryIdGenerator(header)
-
 
       //val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
       val tmp : CSAlignmentQueuedMap[String, CSAlignmentRecord] = new CSAlignmentQueuedMap[String, CSAlignmentRecord](MAX_NUMBER_FOR_READ_MAP)
 
       println("*** Start to build pairSort and fragSort! ***\n")
 
-      for (readCSRecord <- readArray) {
+      for (readCSRecord <- fragSort) {
         if(readCSRecord.getIndex % 1000000 == 0) println("Process on: " + readCSRecord.getIndex)
-        if (readCSRecord.getReadUnmappedFlag) {
-          if (readCSRecord.getReferenceIndex == -1) {
-            println("We are breaking from this point: " + readCSRecord.getIndex + " & the reference index is: " + readCSRecord.getReferenceIndex + "\n")
-            break()
-          }
-        } else if (!readCSRecord.isSecondaryOrSupplementary) {
+//        if (readCSRecord.getReadUnmappedFlag) {
+//          if (readCSRecord.getReferenceIndex == -1) {
+//            println("We are breaking from this point: " + readCSRecord.getIndex + " & the reference index is: " + readCSRecord.getReferenceIndex + "\n")
+//            break()
+//          }
+//        } else if (!readCSRecord.isSecondaryOrSupplementary) {
           val fragmentEnd = buildReadEnds(header, readCSRecord, libraryIdGenerator)
           //fragSort.add(fragmentEnd)
 
@@ -184,7 +172,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
               pairSort.add(pairedEnd)
             }
           }
-        }
+        //}
       }
 
       /*
