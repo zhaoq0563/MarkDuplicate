@@ -402,11 +402,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       ends.libraryId = rec.getLibraryId
 
-      //println("\nThe name of Read is: " + rec.getReadName + "\n")
-      //printCSAlignmentRecord(rec)
-
-      //println("\n*** Test opticalDuplicateFinder: " + (this.opticalDuplicateFinder == null))
-
       if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
@@ -437,6 +432,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     rec.read1IndexInFile = rec.getIndex
     if (rec.getReadPairedFlag && !rec.getMateUnmappedFlag)
       rec.read2ReferenceIndex = rec.getMateReferenceIndex.asInstanceOf[Int]
+    rec.paired = !(rec.read2ReferenceIndex == -1)
 
     // Build one ReadEndsForMarkDuplicates for filling in optical duplicate location information
     val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
@@ -560,7 +556,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
   def areComparableForDuplicatesF(lhs : CSAlignmentRecord, rhs : CSAlignmentRecord) : Boolean = {
-    var retval: Boolean = (lhs.libraryId == rhs.libraryId) && (lhs.read1ReferenceIndex == rhs.read1ReferenceIndex) && (lhs.read1Coordinate == rhs.read1Coordinate) && (lhs.orientation == rhs.orientation)
+    val retval: Boolean = (lhs.libraryId == rhs.libraryId) && (lhs.read1ReferenceIndex == rhs.read1ReferenceIndex) && (lhs.read1Coordinate == rhs.read1Coordinate) && (lhs.orientation == rhs.orientation)
 
     retval
   }

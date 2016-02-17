@@ -26,15 +26,18 @@ class CSAlignmentRecord extends Serializable{
   var libraryId : Short = _
   var index : Long = _
   // For Sort list
-  var read1ReferenceIndex : Int = _
+  var read1ReferenceIndex : Int = -1
   var read2ReferenceIndex : Int = -1
-  var read1Coordinate : Int = _
+  var read1Coordinate : Int = -1
+  var read2Coordinate : Int = -1
   var orientation : Byte = _
   var read1IndexInFile : Long = _
-  var readGroup : Short = _
-  var tile: Short = -1
-  var x: Short = -1
-  var y: Short = -1
+  var read2IndexInFile : Long = _
+  var readGroup : Short = -1
+  var tile : Short = -1
+  var x : Short = -1
+  var y : Short = -1
+  var paired : Boolean = false
 
   def getReadUnmappedFlag = {this.readUnmappedFlag}
   def getReferenceIndex = {this.referenceIndex}
@@ -54,13 +57,15 @@ class CSAlignmentRecord extends Serializable{
   def getRead1ReferenceIndex = {this.read1ReferenceIndex}
   def getRead2ReferenceIndex = {this.read2ReferenceIndex}
   def getRead1Coordinate = {this.read1Coordinate}
+  def getRead2Coordinate = {this.read2Coordinate}
   def getOrientation = {this.orientation}
   def getRead1IndexInFile = {this.read1IndexInFile}
+  def getRead2IndexInFile = {this.read2IndexInFile}
   def getReadGroup = {this.readGroup}
   def getTile = {this.tile}
   def getX = {this.x}
   def getY = {this.y}
-  def isPaired = {(this.read2ReferenceIndex != -1)}
+  def isPaired = {this.paired}
 
   def isSecondaryOrSupplementary = {this.secondaryOrSupplementary}
 
@@ -83,12 +88,15 @@ class CSAlignmentRecord extends Serializable{
     out.writeInt(read1ReferenceIndex)
     out.writeInt(read2ReferenceIndex)
     out.writeInt(read1Coordinate)
+    out.writeInt(read2Coordinate)
     out.writeByte(orientation)
     out.writeLong(read1IndexInFile)
+    out.writeLong(read2IndexInFile)
     out.writeShort(readGroup)
     out.writeShort(tile)
     out.writeShort(x)
     out.writeShort(y)
+    out.writeBoolean(paired)
 
   }
 
@@ -111,12 +119,15 @@ class CSAlignmentRecord extends Serializable{
     read1ReferenceIndex = in.readInt()
     read2ReferenceIndex = in.readInt()
     read1Coordinate = in.readInt()
+    read2Coordinate = in.readInt()
     orientation = in.readByte()
     read1IndexInFile = in.readLong()
+    read2IndexInFile = in.readLong()
     readGroup = in.readShort()
     tile = in.readShort()
     x = in.readShort()
     y = in.readShort()
+    paired = in.readBoolean()
 
   }
 
