@@ -58,7 +58,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      readsrdd.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
 //      println("\n*** Finish saving the original adam rdd! ***\n")
-      println("*** The number of elements in the original RDD is: " + readsrdd.count() + "\n")
+      //println("*** The number of elements in the original RDD is: " + readsrdd.count() + "\n")
 
       println("*** Start zip! ***\n")
 
@@ -84,7 +84,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         CSRecord
       }}
 
-      println("*** The number of elements in the CSAlignment RDD is: " + readCSIndexRDD.count() + "\n")
+      //println("*** The number of elements in the CSAlignment RDD is: " + readCSIndexRDD.count() + "\n")
 
       println("*** Finish mapping to CSAlignmentRecord! ***\n")
 
@@ -104,7 +104,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         fragmentEnd
       }
 
-      println("*** The number of elements in the fragSort RDD is: " + fragSortRDD.count() + "\n")
+      //println("*** The number of elements in the fragSort RDD is: " + fragSortRDD.count() + "\n")
 
       println("*** Finish mapping to fragSort! ***\n")
 
@@ -586,6 +586,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     def addIndexAsDuplicate(bamIndex : Long) = {
+      println("we are adding No." + bamIndex + "duplicate index")
       duplicateIndexes.add(bamIndex)
       numDuplicateIndices += 1
     }
