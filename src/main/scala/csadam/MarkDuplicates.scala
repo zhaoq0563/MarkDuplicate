@@ -30,6 +30,7 @@ import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDicti
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
 
+import scala.collection.JavaConverters._
 import scala.util.control.Breaks.break
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
@@ -57,7 +58,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //      readsrdd.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
 
 //      println("\n*** Finish saving the original adam rdd! ***\n")
-      println("The number of elements in the original RDD is: " + readsrdd.count() + "\n")
+      println("*** The number of elements in the original RDD is: " + readsrdd.count() + "\n")
 
       println("*** Start zip! ***\n")
 
@@ -67,7 +68,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("*** Finish zip! ***\n")
 
-      println("*** Start map! ***\n")
+      println("*** Start map to CSAlignment! ***\n")
 
       val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
         val samHeader = new SAMHeader
@@ -83,7 +84,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         CSRecord
       }}
 
+      println("*** The number of elements in the CSAlignment RDD is: " + readCSIndexRDD.count() + "\n")
+
       println("*** Finish mapping to CSAlignmentRecord! ***\n")
+
+      println("*** Start map to fragSort! ***\n")
 
       val fragSortRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => (!(read.getReadUnmappedFlag) && !(read.isSecondaryOrSupplementary))}.map{read : CSAlignmentRecord =>
         val samHeader = new SAMHeader
@@ -99,19 +104,24 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         fragmentEnd
       }
 
-      println("*** Start to collect data from CSAlignmentRecord RDD! ***\n")
+      println("*** The number of elements in the fragSort RDD is: " + fragSortRDD.count() + "\n")
 
-//      readCSIndexRDD.foreach(x => {
-//        if (x.isInstanceOf[CSAlignmentRecord] == true)
-//          println("This is a fking CSAlignment Record!")
-//      } )
+      println("*** Finish mapping to fragSort! ***\n")
 
-      //readCSIndexRDD.saveAsTextFile("hdfs://cdsc0:9000/user/qzhao/temp")
+      println("*** Start map to pairSort! ***\n")
 
-//      println("\n*** Save as text successfully ***\n"
+//      val hashPairRDD = fragSortRDD.filter{read : CSAlignmentRecord => (read.getReadPairedFlag && !read.getMateUnmappedFlag)}.map{read : CSAlignmentRecord =>
+//        val hashString =
+//
+//      }
+
+      println("*** Finish mapping to pairSort! ***\n")
+
+      println("*** Start to collect data from fragSort RDD! ***\n")
 
       fragSort = fragSortRDD.collect()
-      println("The size of the fragSort is: " + fragSort.length + "\n")
+
+      println("*** The size of the fragSort is: " + fragSort.length + "\n")
 
       // Collect the data from CSrdd and iterate them to build frag/pair Sort
       //val readArray = readCSIndexRDD.collect()
@@ -121,59 +131,69 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Finish collecting! ***\n")
 
       //val tmp: java.util.ArrayList[CSAlignmentRecord] = new java.util.ArrayList[CSAlignmentRecord]
-      val tmp : CSAlignmentQueuedMap[String, CSAlignmentRecord] = new CSAlignmentQueuedMap[String, CSAlignmentRecord](MAX_NUMBER_FOR_READ_MAP)
+      //val tmp : CSAlignmentQueuedMap[String, CSAlignmentRecord] = new CSAlignmentQueuedMap[String, CSAlignmentRecord](MAX_NUMBER_FOR_READ_MAP)
+      val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
 
       println("*** Start to build pairSort and fragSort! ***\n")
 
-      for (readCSRecord <- fragSort) {
-        if(readCSRecord.getIndex % 1000000 == 0) println("Process on: " + readCSRecord.getIndex)
-//        if (readCSRecord.getReadUnmappedFlag) {
-//          if (readCSRecord.getReferenceIndex == -1) {
-//            println("We are breaking from this point: " + readCSRecord.getIndex + " & the reference index is: " + readCSRecord.getReferenceIndex + "\n")
-//            break()
-//          }
-//        } else if (!readCSRecord.isSecondaryOrSupplementary) {
-          val fragmentEnd = buildReadEnds(header, readCSRecord, libraryIdGenerator)
-          //fragSort.add(fragmentEnd)
+      val iterator = fragSort.iterator
+      var index = 0
+      while (iterator.hasNext) {
+        var readCSRecord = iterator.next()
+        //for (readCSRecord <- fragSort) {
+        //        if (readCSRecord.getReadUnmappedFlag) {
+        //          if (readCSRecord.getReferenceIndex == -1) {
+        //            println("We are breaking from this point: " + readCSRecord.getIndex + " & the reference index is: " + readCSRecord.getReferenceIndex + "\n")
+        //            break()
+        //          }
+        //        } else if (!readCSRecord.isSecondaryOrSupplementary) {
+        //val fragmentEnd = buildReadEnds(header, readCSRecord, libraryIdGenerator)
+        //fragSort.add(fragmentEnd)
 
-          if (readCSRecord.getReadPairedFlag && !readCSRecord.getMateUnmappedFlag) {
-            val key = readCSRecord.getReferenceIndex.toString + readCSRecord.getReadName
-            val checkPair = findMate(tmp, key)
-            if (checkPair == null) {
-              tmp.addItem((readCSRecord.getMateReferenceIndex + readCSRecord.getReadName), readCSRecord)
-              //println("Temp size: " + tmp.length())
+        if (readCSRecord.getReadPairedFlag && !readCSRecord.getMateUnmappedFlag) {
+          //val key = readCSRecord.getReferenceIndex.toString + readCSRecord.getReadName
+          val key = readCSRecord.getReadGroupID + ":" + readCSRecord.getReadName
+          //val checkPair = findMate(tmp, key)
+          var checkPair = tmp.remove(Integer2int(readCSRecord.getReferenceIndex), key)
+          if (checkPair == null) {
+            checkPair = buildReadEnds(header, readCSRecord, libraryIdGenerator)
+            //tmp.addItem((readCSRecord.getMateReferenceIndex + readCSRecord.getReadName), readCSRecord)
+            tmp.put(checkPair.read2IndexInFile.asInstanceOf[Int], key, checkPair)
+          } else {
+            val sequence: Int = readCSRecord.read1ReferenceIndex
+            val coordinate: Int = readCSRecord.read1Coordinate
+
+            if (readCSRecord.getFirstOfPairFlag) {
+              checkPair.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, checkPair.orientation == ReadEnds.R)
             } else {
-              val sequence : Int = fragmentEnd.read1IndexInFile.asInstanceOf[Int]
-              val coordinate : Int = fragmentEnd.read1Coordinate
-              val pairedEnd : ReadEndsForMarkDuplicates = buildReadEnds(header, checkPair, libraryIdGenerator)
-
-              if (readCSRecord.getFirstOfPairFlag) {
-                pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, pairedEnd.orientation == ReadEnds.R)
-              } else {
-                pairedEnd.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
-              }
-
-              if (sequence > pairedEnd.read1ReferenceIndex || (sequence == pairedEnd.read1ReferenceIndex && coordinate >= pairedEnd.read1Coordinate)) {
-                pairedEnd.read2ReferenceIndex = sequence
-                pairedEnd.read2Coordinate = coordinate
-                pairedEnd.read2IndexInFile = readCSRecord.getIndex
-                pairedEnd.orientation = ReadEnds.getOrientationByte(pairedEnd.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
-              } else {
-                pairedEnd.read2ReferenceIndex = pairedEnd.read1ReferenceIndex
-                pairedEnd.read2Coordinate = pairedEnd.read1Coordinate
-                pairedEnd.read2IndexInFile = pairedEnd.read1IndexInFile
-                pairedEnd.read1ReferenceIndex = sequence
-                pairedEnd.read1Coordinate = coordinate
-                pairedEnd.read1IndexInFile = readCSRecord.getIndex
-                pairedEnd.orientation = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, pairedEnd.orientation == ReadEnds.R)
-              }
-
-              pairedEnd.score = (pairedEnd.score + readCSRecord.getScore).toShort
-              pairSort.add(pairedEnd)
+              checkPair.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(checkPair.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
             }
+
+            if (sequence > checkPair.read1ReferenceIndex || (sequence == checkPair.read1ReferenceIndex && coordinate >= checkPair.read1Coordinate)) {
+              checkPair.read2ReferenceIndex = sequence
+              checkPair.read2Coordinate = coordinate
+              checkPair.read2IndexInFile = readCSRecord.getIndex
+              checkPair.orientation = ReadEnds.getOrientationByte(checkPair.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
+            } else {
+              checkPair.read2ReferenceIndex = checkPair.read1ReferenceIndex
+              checkPair.read2Coordinate = checkPair.read1Coordinate
+              checkPair.read2IndexInFile = checkPair.read1IndexInFile
+              checkPair.read1ReferenceIndex = sequence
+              checkPair.read1Coordinate = coordinate
+              checkPair.read1IndexInFile = readCSRecord.getIndex
+              checkPair.orientation = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, checkPair.orientation == ReadEnds.R)
+            }
+
+            checkPair.score = (checkPair.score + readCSRecord.getScore).toShort
+            pairSort.add(checkPair)
           }
+        }
+        index += 1
+        if (index % 1000000 == 0) println("Process on: " + index)
         //}
       }
+
+      println("*** Read " + index + " records. " + tmp.size() + " pairs never matched. ***\n")
 
       /*
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
@@ -218,6 +238,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       CSRecord.score = DuplicateScoringStrategy.computeDuplicateScore(readSAM, ScoringStrategy.SUM_OF_BASE_QUALITIES)
       CSRecord.libraryId = libraryIdGenerator.getLibraryId(readSAM)
       CSRecord.index = index
+      CSRecord.readgroupid = readSAM.getAttribute(ReservedTagConstants.READ_GROUP_ID).toString
 
       if(readSAM.getReadPairedFlag && !readSAM.getMateUnmappedFlag)
         CSRecord.mateReferenceIndex = readSAM.getMateReferenceIndex
@@ -430,9 +451,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       rec.orientation = ReadEnds.F
     }
     rec.read1IndexInFile = rec.getIndex
-    if (rec.getReadPairedFlag && !rec.getMateUnmappedFlag)
+    if (rec.getReadPairedFlag && !rec.getMateUnmappedFlag) {
       rec.read2ReferenceIndex = rec.getMateReferenceIndex.asInstanceOf[Int]
-    rec.paired = !(rec.read2ReferenceIndex == -1)
+      rec.paired = true
+    }
 
     // Build one ReadEndsForMarkDuplicates for filling in optical duplicate location information
     val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
@@ -555,11 +577,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       retval
     }
 
-  def areComparableForDuplicatesF(lhs : CSAlignmentRecord, rhs : CSAlignmentRecord) : Boolean = {
-    val retval: Boolean = (lhs.libraryId == rhs.libraryId) && (lhs.read1ReferenceIndex == rhs.read1ReferenceIndex) && (lhs.read1Coordinate == rhs.read1Coordinate) && (lhs.orientation == rhs.orientation)
+    def areComparableForDuplicatesF(lhs : CSAlignmentRecord, rhs : CSAlignmentRecord) : Boolean = {
+      val retval: Boolean = (lhs.libraryId == rhs.libraryId) && (lhs.read1ReferenceIndex == rhs.read1ReferenceIndex) && (lhs.read1Coordinate == rhs.read1Coordinate) && (lhs.orientation == rhs.orientation)
 
-    retval
-  }
+      retval
+    }
 
     def addIndexAsDuplicate(bamIndex : Long) = {
       duplicateIndexes.add(bamIndex)

@@ -25,6 +25,7 @@ class CSAlignmentRecord extends Serializable{
   var score : Short = _
   var libraryId : Short = _
   var index : Long = _
+  var readgroupid : String = _
   // For Sort list
   var read1ReferenceIndex : Int = -1
   var read2ReferenceIndex : Int = -1
@@ -53,6 +54,7 @@ class CSAlignmentRecord extends Serializable{
   def getScore = {this.score}
   def getLibraryId = {this.libraryId}
   def getIndex = {this.index}
+  def getReadGroupID = {this.readgroupid}
   // For Sort list
   def getRead1ReferenceIndex = {this.read1ReferenceIndex}
   def getRead2ReferenceIndex = {this.read2ReferenceIndex}
@@ -85,6 +87,7 @@ class CSAlignmentRecord extends Serializable{
     out.writeShort(score)
     out.writeShort(libraryId)
     out.writeLong(index)
+    out.writeObject(readgroupid)
     out.writeInt(read1ReferenceIndex)
     out.writeInt(read2ReferenceIndex)
     out.writeInt(read1Coordinate)
@@ -116,6 +119,7 @@ class CSAlignmentRecord extends Serializable{
     score = in.readShort
     libraryId = in.readShort
     index = in.readLong
+    readgroupid = in.readObject().asInstanceOf[String]
     read1ReferenceIndex = in.readInt()
     read2ReferenceIndex = in.readInt()
     read1Coordinate = in.readInt()
