@@ -40,7 +40,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
     //var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
     var fragSort = Array[CSAlignmentRecord]()
-    var duplicateIndexes = new SortingLongCollection(100000)
+    var duplicateIndexes : SortingLongCollection = _
     var numDuplicateIndices : Int = 0
     var LOG: Log = Log.getInstance(classOf[AbstractOpticalDuplicateFinderCommandLineProgram])
     val MAX_NUMBER_FOR_READ_MAP : Int = 8000
@@ -513,6 +513,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     def generateDupIndexes(libraryIdGenerator : LibraryIdGenerator) = {
+      val maxInMemory = Math.min(((Runtime.getRuntime.maxMemory() * 0.25) / SortingLongCollection.SIZEOF).toInt, (Integer.MAX_VALUE - 5).toDouble).toInt
+      duplicateIndexes = new SortingLongCollection(maxInMemory, tempDir)
       // Generate the duplicate indexes for remove duplicate reads
       println("*** Start to generate duplicate indexes! ***\n")
 
@@ -586,7 +588,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     def addIndexAsDuplicate(bamIndex : Long) = {
-      println("we are adding No." + bamIndex + "duplicate index")
+      println("we are adding No." + bamIndex + " duplicate index")
       duplicateIndexes.add(bamIndex)
       numDuplicateIndices += 1
     }
