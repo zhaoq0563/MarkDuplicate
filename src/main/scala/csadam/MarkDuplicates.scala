@@ -423,20 +423,22 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       ends.libraryId = rec.getLibraryId
 
-      if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
-        // calculate the RG number (nth in list)
-        ends.readGroup = 0
-        val rg: String = rec.getAttribute
-        val readGroups : List[SAMReadGroupRecord] = header.getReadGroups
-        val it = readGroups.iterator
+      ends.readGroup = rec.getReadGroup
 
-        if (rg != null && readGroups != null) {
-          while (it.hasNext) {
-            if (!it.next.getReadGroupId.equals(rg))
-              ends.readGroup = (ends.readGroup + 1).toShort
-          }
-        }
-      }
+//      if (this.opticalDuplicateFinder.addLocationInformation(rec.getReadName, ends)) {
+//        // calculate the RG number (nth in list)
+//        ends.readGroup = 0
+//        val rg: String = rec.getAttribute
+//        val readGroups : List[SAMReadGroupRecord] = header.getReadGroups
+//        val it = readGroups.iterator
+//
+//        if (rg != null && readGroups != null) {
+//          while (it.hasNext) {
+//            if (!it.next.getReadGroupId.equals(rg))
+//              ends.readGroup = (ends.readGroup + 1).toShort
+//          }
+//        }
+//      }
 
       ends
     }
@@ -526,7 +528,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         } else if (areComparableForDuplicates(firstOfNextChunk, next, true : Boolean)) {
           nextChunk.add(next)
         } else {
-          if (nextChunk.size() > 1) markDuplicatePairs(nextChunk, libraryIdGenerator)
+          if (nextChunk.size() > 1) {println("test nextchunk size:" + nextChunk.size()); markDuplicatePairs(nextChunk, libraryIdGenerator)}
           nextChunk.clear()
           nextChunk.add(next)
           firstOfNextChunk = next
@@ -601,27 +603,17 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           best = end
         }
       }
-      /*for (end : ReadEndsForMarkDuplicates <- list) {
-        if (end.score > maxScore || best == null) {
-          maxScore = end.score
-          best = end
-        }
-      }*/
+      println("test max score:" + maxScore)
 
       val it2nd = list.iterator
       while (it2nd.hasNext) {
         val end = it2nd.next
         if (end != best) {
+          println("test read 1 & 2 index:" + end.read1IndexInFile + "; " + end.read2IndexInFile)
           addIndexAsDuplicate(end.read1IndexInFile)
           addIndexAsDuplicate(end.read2IndexInFile)
         }
       }
-      /*for (end : ReadEndsForMarkDuplicates <- list) {
-        if (end != best) {
-          addIndexAsDuplicate(end.read1IndexInFile)
-          addIndexAsDuplicate(end.read2IndexInFile)
-        }
-      }*/
 
       // Null for libraryIdGenerator, need to figure out how to get SAM/BAM header
       if (OpticalDuplicateFinder.DEFAULT_READ_NAME_REGEX != null) {
