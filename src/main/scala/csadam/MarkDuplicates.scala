@@ -158,7 +158,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           if (checkPair == null) {
             checkPair = buildReadEnds(header, readCSRecord, libraryIdGenerator)
             //tmp.addItem((readCSRecord.getMateReferenceIndex + readCSRecord.getReadName), readCSRecord)
-            tmp.put(checkPair.read2IndexInFile.asInstanceOf[Int], key, checkPair)
+            tmp.put(checkPair.read2ReferenceIndex, key, checkPair)
           } else {
             val sequence: Int = readCSRecord.read1ReferenceIndex
             val coordinate: Int = readCSRecord.read1Coordinate
