@@ -746,9 +746,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         }
         indexInFile += 1
       }*/
+      println("*** Finish marking duplicates based on duplicate index! ***\n")
 
       // Use the filter function to get rid of those reads contains indexes in the duplicateIndexes
       val saveADAMRDDFilter = readADAMRDD.filter(read  => read.getDuplicateRead.equals(false))
+
+      println("*** Finish filter out duplicates! ***\n")
+
       val saveADAMRDD = new ADAMRDDFunctions(saveADAMRDDFilter)
       //println("*** The number of reads after mark duplicate: " + saveADAMRDDFilter.count() + "\n")
       saveADAMRDD.adamParquetSave(output)
