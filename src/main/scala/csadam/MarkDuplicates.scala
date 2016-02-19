@@ -549,7 +549,12 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       while (itFragSort.hasNext) {
         //val next : ReadEndsForMarkDuplicates = itFragSort.next
         val next : CSAlignmentRecord = itFragSort.next
-        if (firstOfNextChunk != null && areComparableForDuplicatesF(firstOfNextChunkF, next)) {
+        if (firstOfNextChunkF == null) {
+          firstOfNextChunkF = next
+          nextChunkF.add(firstOfNextChunkF)
+          containsPairs = containsPairs || next.isPaired
+          containsFrags = containsFrags || !next.isPaired
+        } else if (areComparableForDuplicatesF(firstOfNextChunkF, next)) {
           nextChunkF.add(next)
           containsPairs = containsPairs || next.isPaired
           containsFrags = containsFrags || !next.isPaired
@@ -588,7 +593,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     def addIndexAsDuplicate(bamIndex : Long) = {
-      println("we are adding No." + bamIndex + " duplicate index")
+      //println("we are adding No." + bamIndex + " duplicate index")
       duplicateIndexes.add(bamIndex)
       numDuplicateIndices += 1
     }
@@ -606,13 +611,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           best = end
         }
       }
-      println("test max score:" + maxScore)
+      //println("test max score:" + maxScore)
 
       val it2nd = list.iterator
       while (it2nd.hasNext) {
         val end = it2nd.next
         if (end != best) {
-          println("test read 1 & 2 index:" + end.read1IndexInFile + "; " + end.read2IndexInFile)
+          //println("test read 1 & 2 index:" + end.read1IndexInFile + "; " + end.read2IndexInFile)
           addIndexAsDuplicate(end.read1IndexInFile)
           addIndexAsDuplicate(end.read2IndexInFile)
         }
