@@ -14,7 +14,6 @@ import java.util.{Comparator, List, ArrayList}
 import java.io.File
 import cs.ucla.edu.bwaspark.datatype.{BNTSeqType, BWAIdxType}
 import cs.ucla.edu.bwaspark.sam.SAMHeader
-import htsjdk.samtools
 import main.scala.csadam.util.{CSAlignmentQueuedMap, CSAlignmentRecord}
 import htsjdk.samtools.util.Log
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
@@ -25,13 +24,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
 import org.bdgenomics.adam.models.{RecordGroupDictionary, SAMFileHeaderWritable, SequenceDictionary}
-import org.bdgenomics.adam.rdd.read.AlignmentRecordRDDFunctions
 import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDictionaryRDDAggregator, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
-
-import scala.collection.JavaConverters._
-import scala.util.control.Breaks.break
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
