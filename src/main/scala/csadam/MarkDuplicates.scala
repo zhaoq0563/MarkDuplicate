@@ -27,6 +27,7 @@ import org.bdgenomics.adam.models.{RecordGroupDictionary, SAMFileHeaderWritable,
 import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDictionaryRDDAggregator, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
+import org.bdgenomics.adam.rdd.ADAMContext._
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
@@ -753,9 +754,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("*** Finish filter out duplicates! ***\n")
 
-      val saveADAMRDD = new ADAMRDDFunctions(saveADAMRDDFilter)
+      saveADAMRDDFilter.adamParquetSave(output)
+
+      //val saveADAMRDD = new ADAMRDDFunctions(saveADAMRDDFilter)
       //println("*** The number of reads after mark duplicate: " + saveADAMRDDFilter.count() + "\n")
-      saveADAMRDD.adamParquetSave(output)
+      //saveADAMRDD.adamParquetSave(output)
 
       println("*** Finish writing back reads to ADAM file without duplicates! ***\n")
     }
