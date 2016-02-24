@@ -184,7 +184,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
           }
         }
         index += 1
-        if (index % 1000000 == 0) println("Process on: " + index)
+        //if (index % 1000000 == 0) println("Process on: " + index)
         //}
       }
 
