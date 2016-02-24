@@ -29,6 +29,8 @@ import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
 import org.bdgenomics.adam.rdd.ADAMContext._
 
+import scala.collection.mutable
+
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     var maxInMemory : Int = (Runtime.getRuntime.maxMemory() * 0.5 / ReadEndsForMarkDuplicates.SIZE_OF).toInt
@@ -701,15 +703,15 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Start to write reads back to ADAM file without duplicates! ***\n")
 
       // Transform duplicateIndexes into HashTable
-      val dpIndexes = new java.util.Hashtable[Long, Long]()
+      val dpIndexes = new mutable.HashSet[Long]()
       var dpCounter = 0
       while (duplicateIndexes.hasNext) {
         val value = duplicateIndexes.next
-        dpIndexes.put(value, value)
+        dpIndexes += value
         dpCounter += 1
       }
 
-      println("*** [COUNT]The number of duplicate is: " + dpCounter + " !***\n")
+      println("*** [COUNT]The number of duplicate is: " + dpCounter + " ; " + dpIndexes.size + " !***\n")
       /*for (index <- duplicateIndexes) {
         dpIndexes.put(index, index)
       }*/
@@ -725,7 +727,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         read
       }}
 
-      val temp = readADAMRDD.collect()
+      //val temp = readADAMRDD.collect()
 
       /*var indexInFile : Long = 0
       var nextDuplicateIndex : Long = 0
