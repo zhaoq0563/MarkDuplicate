@@ -528,7 +528,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         } else if (areComparableForDuplicates(firstOfNextChunk, next, true : Boolean)) {
           nextChunk.add(next)
         } else {
-          if (nextChunk.size() > 1) {println("test nextchunk size:" + nextChunk.size()); markDuplicatePairs(nextChunk, libraryIdGenerator)}
+          if (nextChunk.size() > 1) {markDuplicatePairs(nextChunk, libraryIdGenerator)}
           nextChunk.clear()
           nextChunk.add(next)
           firstOfNextChunk = next
