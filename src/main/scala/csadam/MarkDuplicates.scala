@@ -722,6 +722,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         if (broadcastDpIndexes.value.contains(index)) {
           read.setDuplicateRead(boolean2Boolean(true))
+          println("!!!Got one duplicates!!!")
         } else read.setDuplicateRead(boolean2Boolean(false))
 
         read
