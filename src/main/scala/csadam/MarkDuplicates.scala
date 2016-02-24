@@ -756,6 +756,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       saveADAMRDDFilter.adamParquetSave(output)
 
+
       //val saveADAMRDD = new ADAMRDDFunctions(saveADAMRDDFilter)
       //println("*** The number of reads after mark duplicate: " + saveADAMRDDFilter.count() + "\n")
       //saveADAMRDD.adamParquetSave(output)
