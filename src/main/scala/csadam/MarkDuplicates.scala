@@ -721,8 +721,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         if (broadcastDpIndexes.value.contains(index)) {
           read.setDuplicateRead(boolean2Boolean(true))
         } else read.setDuplicateRead(boolean2Boolean(false))
+
         read
       }}
+
+      val temp = readADAMRDD.collect()
 
       /*var indexInFile : Long = 0
       var nextDuplicateIndex : Long = 0
