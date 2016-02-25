@@ -25,6 +25,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
 import org.bdgenomics.adam.models.{RecordGroupDictionary, SAMFileHeaderWritable, SequenceDictionary}
 import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDictionaryRDDAggregator, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
+import org.bdgenomics.adam.rich.RichAlignmentRecord
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
 import org.bdgenomics.adam.rdd.ADAMContext._
@@ -219,7 +220,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
       // Build one single CSAlignmentRecord for CSrdd with index
       val CSRecord : CSAlignmentRecord = new CSAlignmentRecord()
-      val readSAM : SAMRecord = new AlignmentRecordConverter().convert(read, new SAMFileHeaderWritable(header))
+      val readSAM : SAMRecord = convertADAMtoSam(read, new SAMFileHeaderWritable(header))
 
       // Assign the flags of CSAlignmentRecord from SAMRecord
       CSRecord.readUnmappedFlag = readSAM.getReadUnmappedFlag
@@ -243,6 +244,141 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       CSRecord
     }
+
+    def convertADAMtoSam(adamRecord: AlignmentRecord, header: SAMFileHeaderWritable): SAMRecord = {
+
+      // get read group dictionary from header
+      val rgDict = header.header.getSequenceDictionary
+
+      // attach header
+      val builder: SAMRecord = new SAMRecord(header.header)
+
+      // set canonically necessary fields
+      builder.setReadName(adamRecord.getReadName.toString)
+      builder.setReadString(adamRecord.getSequence)
+      adamRecord.getQual match {
+        case null      => builder.setBaseQualityString("*")
+        case s: String => builder.setBaseQualityString(s)
+      }
+
+      // set read group flags
+      Option(adamRecord.getRecordGroupName)
+        .map(_.toString)
+        .map(rgDict.getSequenceIndex)
+        .foreach(v => builder.setAttribute("RG", v.toString))
+      Option(adamRecord.getRecordGroupLibrary)
+        .foreach(v => builder.setAttribute("LB", v.toString))
+      Option(adamRecord.getRecordGroupPlatformUnit)
+        .foreach(v => builder.setAttribute("PU", v.toString))
+
+      // set the reference name, and alignment position, for mate
+      Option(adamRecord.getMateContig)
+        .map(_.getContigName)
+        .map(_.toString)
+        .foreach(builder.setMateReferenceName)
+      Option(adamRecord.getMateAlignmentStart)
+        .foreach(s => builder.setMateAlignmentStart(s.toInt + 1))
+
+      // set template length
+      Option(adamRecord.getInferredInsertSize)
+        .foreach(s => builder.setInferredInsertSize(s.toInt))
+
+      // set flags
+      Option(adamRecord.getReadPaired).foreach(p => {
+        builder.setReadPairedFlag(p.booleanValue)
+
+        // only set flags if read is paired
+        if (p) {
+          Option(adamRecord.getMateNegativeStrand)
+            .foreach(v => builder.setMateNegativeStrandFlag(v.booleanValue))
+          Option(adamRecord.getMateMapped)
+            .foreach(v => builder.setMateUnmappedFlag(!v.booleanValue))
+          Option(adamRecord.getProperPair)
+            .foreach(v => builder.setProperPairFlag(v.booleanValue))
+          Option(adamRecord.getReadNum == 0)
+            .foreach(v => builder.setFirstOfPairFlag(v.booleanValue))
+          Option(adamRecord.getReadNum == 1)
+            .foreach(v => builder.setSecondOfPairFlag(v.booleanValue))
+        }
+      })
+      Option(adamRecord.getDuplicateRead)
+        .foreach(v => builder.setDuplicateReadFlag(v.booleanValue))
+      Option(adamRecord.getReadMapped)
+        .foreach(m => {
+          builder.setReadUnmappedFlag(!m.booleanValue)
+
+          // only set alignment flags if read is aligned
+          if (m) {
+            // if we are aligned, we must have a reference
+            assert(adamRecord.getContig != null, "Cannot have null contig if aligned.")
+            builder.setReferenceName(adamRecord.getContig.getContigName)
+
+            // set the cigar, if provided
+            Option(adamRecord.getCigar).map(_.toString).foreach(builder.setCigarString)
+            // set the old cigar, if provided
+            Option(adamRecord.getOldCigar).map(_.toString).foreach(v => builder.setAttribute("OC", v))
+            // set mapping flags
+            Option(adamRecord.getReadNegativeStrand)
+              .foreach(v => builder.setReadNegativeStrandFlag(v.booleanValue))
+            Option(adamRecord.getPrimaryAlignment)
+              .foreach(v => builder.setNotPrimaryAlignmentFlag(!v.booleanValue))
+            Option(adamRecord.getSupplementaryAlignment)
+              .foreach(v => builder.setSupplementaryAlignmentFlag(v.booleanValue))
+            Option(adamRecord.getStart)
+              .foreach(s => builder.setAlignmentStart(s.toInt + 1))
+            Option(adamRecord.getOldPosition)
+              .foreach(s => builder.setAttribute("OP", s.toInt + 1))
+            Option(adamRecord.getMapq).foreach(v => builder.setMappingQuality(v))
+          } else {
+            // mapping quality must be 0 if read is unmapped
+            builder.setMappingQuality(0)
+          }
+        })
+      Option(adamRecord.getFailedVendorQualityChecks)
+        .foreach(v => builder.setReadFailsVendorQualityCheckFlag(v.booleanValue))
+      Option(adamRecord.getMismatchingPositions)
+        .map(_.toString)
+        .foreach(builder.setAttribute("MD", _))
+
+      // add all other tags
+//      if (adamRecord.getAttributes != null) {
+//        val mp = RichAlignmentRecord(adamRecord).tags
+//        mp.foreach(a => {
+//          builder.setAttribute(a.tag, a.value)
+//        })
+//      }
+
+      // return sam record
+      builder
+    }
+
+//    def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
+//      // Build one single CSAlignmentRecord for CSrdd with index
+//      val CSRecord : CSAlignmentRecord = new CSAlignmentRecord()
+//      val readSAM : SAMRecord = new AlignmentRecordConverter().convert(read, new SAMFileHeaderWritable(header))
+//
+//      // Assign the flags of CSAlignmentRecord from SAMRecord
+//      CSRecord.readUnmappedFlag = readSAM.getReadUnmappedFlag
+//      CSRecord.secondaryOrSupplementary = readSAM.isSecondaryOrSupplementary
+//      CSRecord.referenceIndex = readSAM.getReferenceIndex
+//      CSRecord.readNegativeStrandFlag = readSAM.getReadNegativeStrandFlag
+//      CSRecord.unclippedEnd = readSAM.getUnclippedEnd
+//      CSRecord.unclippedStart = readSAM.getUnclippedStart
+//      CSRecord.pairedFlag = readSAM.getReadPairedFlag
+//      CSRecord.firstOfPair = readSAM.getFirstOfPairFlag
+//      CSRecord.mateUnmappedFlag = readSAM.getMateUnmappedFlag
+//      CSRecord.readName = readSAM.getReadName
+//      CSRecord.attribute = readSAM.getAttribute("RG").toString
+//      CSRecord.score = DuplicateScoringStrategy.computeDuplicateScore(readSAM, ScoringStrategy.SUM_OF_BASE_QUALITIES)
+//      CSRecord.libraryId = libraryIdGenerator.getLibraryId(readSAM)
+//      CSRecord.index = index
+//      CSRecord.readgroupid = readSAM.getAttribute(ReservedTagConstants.READ_GROUP_ID).toString
+//
+//      if(readSAM.getReadPairedFlag && !readSAM.getMateUnmappedFlag)
+//        CSRecord.mateReferenceIndex = readSAM.getMateReferenceIndex
+//
+//      CSRecord
+//    }
 
     def printCSAlignmentRecord(read : CSAlignmentRecord) = {
       println("\n*** The CSAlignment record has the following information:")
