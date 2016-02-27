@@ -856,7 +856,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
         if (broadcastDpIndexes.value.contains(index)) {
           read.setDuplicateRead(boolean2Boolean(true))
-          println("!!!Got one duplicates!!!")
+          //println("!!!Got one duplicates!!!")
         } else read.setDuplicateRead(boolean2Boolean(false))
 
         read
@@ -950,7 +950,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val t0 = System.nanoTime : Double
 
-      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077").set("spark.driver.maxResultSize", "100G").set("spark.network.timeout", "500s").set("spark.cores.max", "500")
+      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077").set("spark.driver.maxResultSize", "100G").set("spark.network.timeout", "1000s").set("spark.cores.max", "500")
       val sc = new SparkContext(conf)
       val ac = new ADAMContext(sc)
       val readsRDD: RDD[AlignmentRecord] = ac.loadAlignments(input)
