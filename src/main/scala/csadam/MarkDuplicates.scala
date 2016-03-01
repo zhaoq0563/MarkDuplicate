@@ -244,7 +244,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     def convertADAMtoSam(adamRecord: AlignmentRecord, header: SAMFileHeaderWritable): SAMRecord = {
-
       // get read group dictionary from header
       val rgDict = header.header.getSequenceDictionary
 
