@@ -71,8 +71,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         val samHeader = new SAMHeader
         val samFileHeader = new SAMFileHeader
         val packageVersion = "v01"
-        val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
-        //val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
+        //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
+        val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
         samHeader.bwaGenSAMHeader(bns_bc.value, packageVersion, readGroupString, samFileHeader)
         val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
@@ -91,8 +91,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         val samHeader = new SAMHeader
         val samFileHeader = new SAMFileHeader
         val packageVersion = "v01"
-        val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
-        //val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
+        //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
+        val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
         samHeader.bwaGenSAMHeader(bns_bc.value, packageVersion, readGroupString, samFileHeader)
         val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
@@ -974,8 +974,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val samHeader = new SAMHeader
       val samFileHeader = new SAMFileHeader
       val packageVersion = "v01"
-      val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
-      //val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
+      //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
+      val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
       samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, samFileHeader)
       val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
