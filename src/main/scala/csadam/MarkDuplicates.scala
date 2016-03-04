@@ -83,11 +83,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var count = 0
       var index = 0
       var totalTake = 0
-      val partSize = 100000000
+      val partSize = 200000000
       val iteration = totalReads/partSize + 1
       val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
 
-      println("*** Start to build fragSort and pairSort for every 10 million reads! ***\n")
+      println("*** Start to build fragSort and pairSort for every 200 million reads! ***\n")
 
       while(count < iteration) {
         // Collect 10 million each iteration to build fragSort and PairSort
@@ -913,8 +913,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // Transform duplicateIndexes into HashTable
       val dpIndexes = new mutable.HashSet[Long]()
       var dpCounter = 0
-      while (duplicateIndexes.hasNext) {
-        val value = duplicateIndexes.next
+      while (this.duplicateIndexes.hasNext) {
+        val value = this.duplicateIndexes.next
         dpIndexes += value
         dpCounter += 1
       }
