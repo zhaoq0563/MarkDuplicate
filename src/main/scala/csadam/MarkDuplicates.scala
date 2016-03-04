@@ -99,6 +99,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         else {totalTake = partSize}
         val readArray = readCSIndexRDD.take(totalTake)
 
+        println("*** Process on " + (count * partSize) + " to "  + (count * partSize + totalTake) + " reads! ***\n")
+
         // 3, Build the fragSort and PairSort
         val it = readArray.iterator
         while(it.hasNext) {
