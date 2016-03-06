@@ -148,25 +148,26 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("*** Start to build fragSort and pairSort for every 200 million reads! ***\n")
 
-      while(end == 0) {
+      //while(end == 0) {
         // Collect 10 million each iteration to build fragSort and PairSort
         // 1, Filter out those already been built and convert reads to CSAlignmentRecord
-        val readIterationRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => {read.getIndex >= (count * partSize)}}
+        //val readIterationRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => {read.getIndex >= (count * partSize)}}
 
         // 2, Collect back the first partSize reads
-        val readArray = readCSIndexRDD.take(totalTake)
-        totalTake = readArray.length
-        if (totalTake != partSize) {
-          end = 1
-        }
+        //val readArray = readCSIndexRDD.take(totalTake)
+        //totalTake = readArray.length
+        //if (totalTake != partSize) {
+        //  end = 1
+        //}
 
-        println("*** Process on " + (count * partSize) + " to "  + (count * partSize + totalTake) + " reads! ***\n")
+        //println("*** Process on " + (count * partSize) + " to "  + (count * partSize + totalTake) + " reads! ***\n")
 
         // 3, Build the fragSort and PairSort
-        val it = readArray.iterator
+        val it = readCSIndexRDD.toLocalIterator
+        //val it = readArray.iterator
         var continue = 1
         while(it.hasNext && continue == 1) {
-          var readCSRecord = it.next()
+          val readCSRecord = it.next()
 
           if (readCSRecord.getReadUnmappedFlag) {
             if (readCSRecord.getReferenceIndex == -1) {
@@ -258,8 +259,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //          }
 //          index += 1
 //        }
-        count += 1
-      }
+        //count += 1
+      //}
 
 //      val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
 //        val samHeader = new SAMHeader
