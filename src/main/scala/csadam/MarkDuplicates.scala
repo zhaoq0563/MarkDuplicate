@@ -141,7 +141,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var count = 0
       var index = 0
       var totalTake = 0
-      val partSize = 100000000
+      val partSize = 200000000
       //val iteration = totalReads/partSize + 1
       //val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
 
@@ -153,7 +153,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         //val readIterationRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => {read.getIndex >= (count * partSize)}}
 
         // 2, Collect back the first partSize reads
-        val readArray = readCSIndexRDD.take(totalTake)
+        val readArray = readCSIndexRDD.take(partSize)
         println("*** " + readArray.length + " reads are collected! ***\n")
         //totalTake = readArray.length
         //if (totalTake != partSize) {
