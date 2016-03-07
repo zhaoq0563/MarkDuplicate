@@ -74,8 +74,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, samFileHeader, libraryIdGenerator)
 
         CSRecord
-      }}
-      //.filter{read : CSAlignmentRecord => (!(read.getReadUnmappedFlag) && !(read.isSecondaryOrSupplementary))}
+      }}.filter{read : CSAlignmentRecord => (!(read.getReadUnmappedFlag) && !(read.isSecondaryOrSupplementary))}
 
 //      val readArray = readCSIndexRDD.collect()
 //
@@ -144,7 +143,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var totalTake = 0
       val partSize = 200000000
       //val iteration = totalReads/partSize + 1
-      val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
+      //val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
 
       println("*** Start to build fragSort and pairSort for every 200 million reads! ***\n")
 
@@ -154,7 +153,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         //val readIterationRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => {read.getIndex >= (count * partSize)}}
 
         // 2, Collect back the first partSize reads
-        //val readArray = readCSIndexRDD.take(totalTake)
+        val readArray = readCSIndexRDD.take(totalTake)
+        println("*** " + readArray.length + " reads are collected! ***\n")
         //totalTake = readArray.length
         //if (totalTake != partSize) {
         //  end = 1
@@ -163,8 +163,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         //println("*** Process on " + (count * partSize) + " to "  + (count * partSize + totalTake) + " reads! ***\n")
 
         // 3, Build the fragSort and PairSort
-        val it = readCSIndexRDD.toLocalIterator
-        //val it = readArray.iterator
+        //val it = readCSIndexRDD.toLocalIterator
+        val it = readArray.iterator
         var continue = 1
         while(it.hasNext && continue == 1) {
           val readCSRecord = it.next()
@@ -179,41 +179,41 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             val fragmentEnd = buildReadEnds(header, readCSRecord, libraryIdGenerator)
             this.fragSort.add(fragmentEnd)
 
-            if (readCSRecord.getReadPairedFlag && !readCSRecord.getMateUnmappedFlag) {
-              val key = readCSRecord.getReadGroupID + ":" + readCSRecord.getReadName
-              var checkPair = tmp.remove(Integer2int(readCSRecord.getReferenceIndex), key)
-              if (checkPair == null) {
-                checkPair = buildReadEnds(header, readCSRecord, libraryIdGenerator)
-                tmp.put(checkPair.read2ReferenceIndex, key, checkPair)
-              } else {
-                val sequence: Int = readCSRecord.read1ReferenceIndex
-                val coordinate: Int = readCSRecord.read1Coordinate
-
-                if (readCSRecord.getFirstOfPairFlag) {
-                  checkPair.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, checkPair.orientation == ReadEnds.R)
-                } else {
-                  checkPair.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(checkPair.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
-                }
-
-                if (sequence > checkPair.read1ReferenceIndex || (sequence == checkPair.read1ReferenceIndex && coordinate >= checkPair.read1Coordinate)) {
-                  checkPair.read2ReferenceIndex = sequence
-                  checkPair.read2Coordinate = coordinate
-                  checkPair.read2IndexInFile = readCSRecord.getIndex
-                  checkPair.orientation = ReadEnds.getOrientationByte(checkPair.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
-                } else {
-                  checkPair.read2ReferenceIndex = checkPair.read1ReferenceIndex
-                  checkPair.read2Coordinate = checkPair.read1Coordinate
-                  checkPair.read2IndexInFile = checkPair.read1IndexInFile
-                  checkPair.read1ReferenceIndex = sequence
-                  checkPair.read1Coordinate = coordinate
-                  checkPair.read1IndexInFile = readCSRecord.getIndex
-                  checkPair.orientation = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, checkPair.orientation == ReadEnds.R)
-                }
-
-                checkPair.score = (checkPair.score + readCSRecord.getScore).toShort
-                this.pairSort.add(checkPair)
-              }
-            }
+//            if (readCSRecord.getReadPairedFlag && !readCSRecord.getMateUnmappedFlag) {
+//              val key = readCSRecord.getReadGroupID + ":" + readCSRecord.getReadName
+//              var checkPair = tmp.remove(Integer2int(readCSRecord.getReferenceIndex), key)
+//              if (checkPair == null) {
+//                checkPair = buildReadEnds(header, readCSRecord, libraryIdGenerator)
+//                tmp.put(checkPair.read2ReferenceIndex, key, checkPair)
+//              } else {
+//                val sequence: Int = readCSRecord.read1ReferenceIndex
+//                val coordinate: Int = readCSRecord.read1Coordinate
+//
+//                if (readCSRecord.getFirstOfPairFlag) {
+//                  checkPair.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, checkPair.orientation == ReadEnds.R)
+//                } else {
+//                  checkPair.orientationForOpticalDuplicates = ReadEnds.getOrientationByte(checkPair.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
+//                }
+//
+//                if (sequence > checkPair.read1ReferenceIndex || (sequence == checkPair.read1ReferenceIndex && coordinate >= checkPair.read1Coordinate)) {
+//                  checkPair.read2ReferenceIndex = sequence
+//                  checkPair.read2Coordinate = coordinate
+//                  checkPair.read2IndexInFile = readCSRecord.getIndex
+//                  checkPair.orientation = ReadEnds.getOrientationByte(checkPair.orientation == ReadEnds.R, readCSRecord.getReadNegativeStrandFlag)
+//                } else {
+//                  checkPair.read2ReferenceIndex = checkPair.read1ReferenceIndex
+//                  checkPair.read2Coordinate = checkPair.read1Coordinate
+//                  checkPair.read2IndexInFile = checkPair.read1IndexInFile
+//                  checkPair.read1ReferenceIndex = sequence
+//                  checkPair.read1Coordinate = coordinate
+//                  checkPair.read1IndexInFile = readCSRecord.getIndex
+//                  checkPair.orientation = ReadEnds.getOrientationByte(readCSRecord.getReadNegativeStrandFlag, checkPair.orientation == ReadEnds.R)
+//                }
+//
+//                checkPair.score = (checkPair.score + readCSRecord.getScore).toShort
+//                this.pairSort.add(checkPair)
+//              }
+//            }
           }
           index += 1
         }
@@ -385,7 +385,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //        //}
 //      }
 
-      println("*** Read " + index + " records. " + tmp.size() + " pairs never matched. ***\n")
+      //println("*** Read " + index + " records. " + tmp.size() + " pairs never matched. ***\n")
+      println("*** Read " + index + " records. ***\n")
 
       /*
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
