@@ -60,6 +60,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("*** Finish zip! ***\n")
 
+      val test = readRDDwithZip.collect()
+
       println("*** Start map to CSAlignment! ***\n")
 
       val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
