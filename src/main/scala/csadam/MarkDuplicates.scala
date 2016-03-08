@@ -386,8 +386,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //        //}
 //      }
 
-      println("*** Read " + index + " records. " + tmp.size() + " pairs never matched. ***\n")
-      //println("*** Read " + index + " records. ***\n")
+      //println("*** Read " + index + " records. " + tmp.size() + " pairs never matched. ***\n")
+      println("*** Read " + index + " records. ***\n")
 
       /*
       val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
