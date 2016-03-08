@@ -54,13 +54,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("*** Start zip! ***\n")
 
+      val test = readsrdd.collect()
+
       // Map the ADAMrdd[AlignmentRecord] to CSrdd[CSRecord] with index
 
       val readRDDwithZip = readsrdd.zipWithIndex()
 
       println("*** Finish zip! ***\n")
-
-      val test = readRDDwithZip.collect()
 
       println("*** Start map to CSAlignment! ***\n")
 
