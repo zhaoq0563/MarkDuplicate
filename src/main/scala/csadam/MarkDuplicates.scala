@@ -32,7 +32,7 @@ import scala.collection.mutable
 
 object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
-    var maxInMemory : Int = (Runtime.getRuntime.maxMemory() * 0.5 / ReadEndsForMarkDuplicates.SIZE_OF).toInt
+    var maxInMemory : Int = (Runtime.getRuntime.maxMemory() * 0.2 / ReadEndsForMarkDuplicates.SIZE_OF).toInt
     val tempDir = new File(System.getProperty("java.io.tmpdir"))
     var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
     var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
@@ -142,11 +142,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var count = 0
       var index = 0
       var totalTake = 0
-      val partSize = 100000000
+      val partSize = 150000000
       //val iteration = totalReads/partSize + 1
       val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
 
-      println("*** Start to build fragSort and pairSort for every 200 million reads! ***\n")
+      println("*** Start to build fragSort and pairSort for every 150 million reads! ***\n")
 
       while(end == 0) {
         // Collect 10 million each iteration to build fragSort and PairSort
@@ -269,6 +269,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //        }
         count += 1
         readIterationRDD = null
+        println("** [After]Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / gb)
+        println("** [After]Free Memory:  " + runtime.freeMemory / gb)
+        println("** [After]Total Memory: " + runtime.totalMemory / gb)
+        println("** [After]Max Memory:   " + runtime.maxMemory / gb)
       }
 
 //      val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
@@ -847,7 +851,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //    }
 
     def generateDupIndexes(libraryIdGenerator : LibraryIdGenerator) = {
-      val maxInMemory = Math.min(((Runtime.getRuntime.maxMemory() * 0.25) / SortingLongCollection.SIZEOF).toInt, (Integer.MAX_VALUE - 5).toDouble).toInt
+      val maxInMemory = Math.min(((Runtime.getRuntime.maxMemory() * 0.2) / SortingLongCollection.SIZEOF).toInt, (Integer.MAX_VALUE - 5).toDouble).toInt
       this.duplicateIndexes = new SortingLongCollection(maxInMemory, tempDir)
       // Generate the duplicate indexes for remove duplicate reads
       println("*** Start to generate duplicate indexes! ***\n")
