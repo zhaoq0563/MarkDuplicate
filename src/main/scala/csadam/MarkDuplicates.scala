@@ -151,7 +151,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       while(end == 0) {
         // Collect 10 million each iteration to build fragSort and PairSort
         // 1, Filter out those already been built and convert reads to CSAlignmentRecord
-        var readIterationRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => {read.getIndex >= (count * partSize) || read.getIndex <= ((count+1) * partSize)}}
+        var readIterationRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => {read.getIndex >= (count * partSize) && read.getIndex <= ((count+1) * partSize - 1)}}
 
         // 2, Collect back the first partSize reads
         var readArray = readIterationRDD.collect()
