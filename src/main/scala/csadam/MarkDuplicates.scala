@@ -150,11 +150,17 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       while(end == 0) {
         // Collect 10 million each iteration to build fragSort and PairSort
         // 1, Filter out those already been built and convert reads to CSAlignmentRecord
-        val readIterationRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => {read.getIndex >= (count * partSize)}}
+        var readIterationRDD = readCSIndexRDD.filter{read : CSAlignmentRecord => {read.getIndex >= (count * partSize) || read.getIndex <= ((count+1) * partSize)}}
 
         // 2, Collect back the first partSize reads
-        var readArray = readCSIndexRDD.take(partSize)
+        var readArray = readIterationRDD.collect()
         println("*** " + readArray.length + " reads are taken for this iteration! ***\n")
+        val gb = 1024*1024*1024
+        val runtime = Runtime.getRuntime
+        println("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / gb)
+        println("** Free Memory:  " + runtime.freeMemory / gb)
+        println("** Total Memory: " + runtime.totalMemory / gb)
+        println("** Max Memory:   " + runtime.maxMemory / gb)
         totalTake = readArray.length
         if (totalTake != partSize) {
           end = 1
@@ -261,6 +267,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 //          index += 1
 //        }
         count += 1
+        readIterationRDD = null
       }
 
 //      val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
@@ -408,13 +415,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       fragSort.doneAdding()
       pairSort.doneAdding()
-
-      val mb = 1024*1024
-      val runtime = Runtime.getRuntime
-      println("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb)
-      println("** Free Memory:  " + runtime.freeMemory / mb)
-      println("** Total Memory: " + runtime.totalMemory / mb)
-      println("** Max Memory:   " + runtime.maxMemory / mb)
 
       println("*** Finish building pairSort and fragSort! ***\n")
     }
