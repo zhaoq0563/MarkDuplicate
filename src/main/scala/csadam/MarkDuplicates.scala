@@ -74,7 +74,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, samFileHeader, libraryIdGenerator)
 
         CSRecord
-      }}.filter{read : CSAlignmentRecord => (!(read.getReadUnmappedFlag) && !(read.isSecondaryOrSupplementary))}
+      }}
+        //.filter{read : CSAlignmentRecord => (!(read.getReadUnmappedFlag) && !(read.isSecondaryOrSupplementary))}
 
 //      val readArray = readCSIndexRDD.collect()
 //
@@ -141,7 +142,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var count = 0
       var index = 0
       var totalTake = 0
-      val partSize = 200000000
+      val partSize = 100000000
       //val iteration = totalReads/partSize + 1
       val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
 
