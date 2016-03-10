@@ -10,7 +10,7 @@
 
 package main.scala.csadam
 
-import java.util.{Comparator, List, ArrayList}
+import java.util.{Calendar, Comparator, List, ArrayList}
 import java.io.File
 import cs.ucla.edu.bwaspark.datatype.{BNTSeqType, BWAIdxType}
 import cs.ucla.edu.bwaspark.sam.SAMHeader
@@ -183,14 +183,14 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             }
           }
           else if (!readCSRecord.isSecondaryOrSupplementary) {
-            val fragmentEnd = buildReadEnds(header, readCSRecord, libraryIdGenerator)
+            val fragmentEnd = buildReadEnds(header, readCSRecord)
             this.fragSort.add(fragmentEnd)
 
             if (readCSRecord.getReadPairedFlag && !readCSRecord.getMateUnmappedFlag) {
               val key = readCSRecord.getReadGroupID + ":" + readCSRecord.getReadName
               var checkPair = tmp.remove(Integer2int(readCSRecord.getReferenceIndex), key)
               if (checkPair == null) {
-                checkPair = buildReadEnds(header, readCSRecord, libraryIdGenerator)
+                checkPair = buildReadEnds(header, readCSRecord)
                 tmp.put(checkPair.read2ReferenceIndex, key, checkPair)
               } else {
                 val sequence: Int = readCSRecord.read1ReferenceIndex
@@ -273,6 +273,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         println("** [After]Free Memory:  " + runtime.freeMemory / gb)
         println("** [After]Total Memory: " + runtime.totalMemory / gb)
         println("** [After]Max Memory:   " + runtime.maxMemory / gb)
+        System.gc()
       }
 
 //      val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
@@ -741,7 +742,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Finish building pairSort and fragSort! ***")
     }*/
 
-    def buildReadEnds(header : SAMFileHeader, rec : CSAlignmentRecord, libraryIdGenerator : LibraryIdGenerator) : ReadEndsForMarkDuplicates = {
+    def buildReadEnds(header : SAMFileHeader, rec : CSAlignmentRecord) : ReadEndsForMarkDuplicates = {
       // Build the ReadEnd for each read in ADAM
       val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
       //val recSAM: SAMRecord = new AlignmentRecordConverter().convert(rec, new SAMFileHeaderWritable(header))
@@ -936,7 +937,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var maxScore : Short = 0
       var best : ReadEndsForMarkDuplicates = null
 
-      println("Pair chunk size: " + list.size())
+      if (list.size > 100) println(Calendar.getInstance.getTime() + " [Pair chunk size: " + list.size() + "]")
 
       /** All read ends should have orientation FF, FR, RF, or RR **/
       val it1st = list.iterator
@@ -959,15 +960,14 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         }
       }
 
-      // Null for libraryIdGenerator, need to figure out how to get SAM/BAM header
-      if (OpticalDuplicateFinder.DEFAULT_READ_NAME_REGEX != null) {
+      if (this.READ_NAME_REGEX != null) {
         AbstractMarkDuplicatesCommandLineProgram.trackOpticalDuplicates(list, opticalDuplicateFinder, libraryIdGenerator)
       }
     }
 
     def markDuplicateFragments(list : ArrayList[ReadEndsForMarkDuplicates], containsPairs : Boolean) = {
 
-      println("Frag chunk size: " + list.size())
+      if (list.size > 100) println(Calendar.getInstance.getTime() + " [Frag chunk size: " + list.size() + "]")
 
       if (containsPairs) {
         val it1st = list.iterator
