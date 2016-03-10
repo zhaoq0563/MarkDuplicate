@@ -936,6 +936,8 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var maxScore : Short = 0
       var best : ReadEndsForMarkDuplicates = null
 
+      println("Pair chunk size: " + list.size())
+
       /** All read ends should have orientation FF, FR, RF, or RR **/
       val it1st = list.iterator
       while (it1st.hasNext) {
@@ -964,6 +966,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     }
 
     def markDuplicateFragments(list : ArrayList[ReadEndsForMarkDuplicates], containsPairs : Boolean) = {
+
+      println("Frag chunk size: " + list.size())
+
       if (containsPairs) {
         val it1st = list.iterator
         while (it1st.hasNext) {
