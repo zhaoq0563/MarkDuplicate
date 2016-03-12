@@ -468,7 +468,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       // set read group flags
       Option(adamRecord.getRecordGroupName)
-        .map(_)
+        .map(_.toString)
         .map(rgDict.getSequenceIndex)
         .foreach(v => builder.setAttribute("RG", v.toString))
       Option(adamRecord.getRecordGroupLibrary)
@@ -479,7 +479,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // set the reference name, and alignment position, for mate
       Option(adamRecord.getMateContig)
         .map(_.getContigName)
-        .map(_)
+        .map(_.toString)
         .foreach(builder.setMateReferenceName)
       Option(adamRecord.getMateAlignmentStart)
         .foreach(s => builder.setMateAlignmentStart(s.toInt + 1))
@@ -519,9 +519,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             builder.setReferenceName(adamRecord.getContig.getContigName)
 
             // set the cigar, if provided
-            Option(adamRecord.getCigar).map(_).foreach(builder.setCigarString)
+            Option(adamRecord.getCigar).map(_.toString).foreach(builder.setCigarString)
             // set the old cigar, if provided
-            Option(adamRecord.getOldCigar).map(_).foreach(v => builder.setAttribute("OC", v))
+            Option(adamRecord.getOldCigar).map(_.toString).foreach(v => builder.setAttribute("OC", v))
             // set mapping flags
             Option(adamRecord.getReadNegativeStrand)
               .foreach(v => builder.setReadNegativeStrandFlag(v.booleanValue))
@@ -542,7 +542,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       Option(adamRecord.getFailedVendorQualityChecks)
         .foreach(v => builder.setReadFailsVendorQualityCheckFlag(v.booleanValue))
       Option(adamRecord.getMismatchingPositions)
-        .map(_)
+        .map(_.toString)
         .foreach(builder.setAttribute("MD", _))
 
       // add all other tags
