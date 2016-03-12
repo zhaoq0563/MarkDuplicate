@@ -10,11 +10,11 @@
 
 package main.scala.csadam
 
-import java.util.{Calendar, Comparator, List, ArrayList}
+import java.util.{Calendar, Comparator, ArrayList}
 import java.io.File
 import cs.ucla.edu.bwaspark.datatype.{BNTSeqType, BWAIdxType}
 import cs.ucla.edu.bwaspark.sam.SAMHeader
-import main.scala.csadam.util.{CSAlignmentQueuedMap, CSAlignmentRecord}
+import main.scala.csadam.util.CSAlignmentRecord
 import htsjdk.samtools.util.Log
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy
 import htsjdk.samtools._
@@ -22,8 +22,8 @@ import htsjdk.samtools.util.{SortingCollection, SortingLongCollection}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
-import org.bdgenomics.adam.models.{RecordGroupDictionary, SAMFileHeaderWritable, SequenceDictionary}
-import org.bdgenomics.adam.rdd.{ADAMContext, ADAMRDDFunctions, ADAMSequenceDictionaryRDDAggregator, ADAMSpecificRecordSequenceDictionaryRDDAggregator}
+import org.bdgenomics.adam.models.SAMFileHeaderWritable
+import org.bdgenomics.adam.rdd.ADAMContext
 import org.bdgenomics.formats.avro.AlignmentRecord
 import picard.sam.markduplicates.util._
 import org.bdgenomics.adam.rdd.ADAMContext._
@@ -36,7 +36,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
     val tempDir = new File(System.getProperty("java.io.tmpdir"))
     var pairSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
     var fragSort : SortingCollection[ReadEndsForMarkDuplicates] = SortingCollection.newInstance[ReadEndsForMarkDuplicates](classOf[ReadEndsForMarkDuplicates], new ReadEndsForMarkDuplicatesCodec(), new ReadEndsComparator, maxInMemory, tempDir)
-    //var fragSort = Array[CSAlignmentRecord]()
     var duplicateIndexes : SortingLongCollection = _
     var numDuplicateIndices : Int = 0
     var LOG: Log = Log.getInstance(classOf[AbstractOpticalDuplicateFinderCommandLineProgram])
@@ -62,11 +61,10 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       println("*** Start map to CSAlignment! ***\n")
 
-      val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) => {
+      val readCSIndexRDD = readRDDwithZip.map{case (read : AlignmentRecord, index : Long) =>
         val samHeader = new SAMHeader
         val samFileHeader = new SAMFileHeader
         val packageVersion = "v01"
-        //val readGroupString = "@RG\tID:Sample_WGC033799D\tLB:Sample_WGC033799D\tSM:Sample_WGC033799D"
         val readGroupString = "@RG\tID:Sample_WGC033798D\tLB:Sample_WGC033798D\tSM:Sample_WGC033798D"
         samHeader.bwaGenSAMHeader(bns_bc.value, packageVersion, readGroupString, samFileHeader)
         val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
@@ -74,7 +72,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         val CSRecord : CSAlignmentRecord = buildCSAlignmentRecord(read, index, samFileHeader, libraryIdGenerator)
 
         CSRecord
-      }}
+      }
         //.filter{read : CSAlignmentRecord => (!(read.getReadUnmappedFlag) && !(read.isSecondaryOrSupplementary))}
 
 //      val readArray = readCSIndexRDD.collect()
@@ -461,7 +459,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val builder: SAMRecord = new SAMRecord(header.header)
 
       // set canonically necessary fields
-      builder.setReadName(adamRecord.getReadName.toString)
+      builder.setReadName(adamRecord.getReadName)
       builder.setReadString(adamRecord.getSequence)
       adamRecord.getQual match {
         case null      => builder.setBaseQualityString("*")
@@ -470,18 +468,18 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       // set read group flags
       Option(adamRecord.getRecordGroupName)
-        .map(_.toString)
+        .map(_)
         .map(rgDict.getSequenceIndex)
         .foreach(v => builder.setAttribute("RG", v.toString))
       Option(adamRecord.getRecordGroupLibrary)
-        .foreach(v => builder.setAttribute("LB", v.toString))
+        .foreach(v => builder.setAttribute("LB", v))
       Option(adamRecord.getRecordGroupPlatformUnit)
-        .foreach(v => builder.setAttribute("PU", v.toString))
+        .foreach(v => builder.setAttribute("PU", v))
 
       // set the reference name, and alignment position, for mate
       Option(adamRecord.getMateContig)
         .map(_.getContigName)
-        .map(_.toString)
+        .map(_)
         .foreach(builder.setMateReferenceName)
       Option(adamRecord.getMateAlignmentStart)
         .foreach(s => builder.setMateAlignmentStart(s.toInt + 1))
@@ -521,9 +519,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
             builder.setReferenceName(adamRecord.getContig.getContigName)
 
             // set the cigar, if provided
-            Option(adamRecord.getCigar).map(_.toString).foreach(builder.setCigarString)
+            Option(adamRecord.getCigar).map(_).foreach(builder.setCigarString)
             // set the old cigar, if provided
-            Option(adamRecord.getOldCigar).map(_.toString).foreach(v => builder.setAttribute("OC", v))
+            Option(adamRecord.getOldCigar).map(_).foreach(v => builder.setAttribute("OC", v))
             // set mapping flags
             Option(adamRecord.getReadNegativeStrand)
               .foreach(v => builder.setReadNegativeStrandFlag(v.booleanValue))
@@ -544,7 +542,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       Option(adamRecord.getFailedVendorQualityChecks)
         .foreach(v => builder.setReadFailsVendorQualityCheckFlag(v.booleanValue))
       Option(adamRecord.getMismatchingPositions)
-        .map(_.toString)
+        .map(_)
         .foreach(builder.setAttribute("MD", _))
 
       // add all other tags
@@ -768,7 +766,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
         // calculate the RG number (nth in list)
         ends.readGroup = 0
         val rg: String = rec.getAttribute
-        val readGroups : List[SAMReadGroupRecord] = header.getReadGroups
+        val readGroups = header.getReadGroups
         val it = readGroups.iterator
 
         if (rg != null && readGroups != null) {
@@ -967,7 +965,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
     def markDuplicateFragments(list : ArrayList[ReadEndsForMarkDuplicates], containsPairs : Boolean) = {
 
-      if (list.size > 100) println(Calendar.getInstance.getTime() + " [Frag chunk size: " + list.size() + "]")
+      if (list.size > 10000) println(Calendar.getInstance.getTime() + " [Frag chunk size: " + list.size() + "]")
 
       if (containsPairs) {
         val it1st = list.iterator
@@ -1060,14 +1058,13 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       // Broadcast the duplicate indexes to nodes
       val broadcastDpIndexes = sc.broadcast(dpIndexes)
 
-      val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) => {
+      val readADAMRDD = readsrdd.zipWithIndex().map{case (read : AlignmentRecord, index : Long) =>
         if (broadcastDpIndexes.value.contains(index)) {
           read.setDuplicateRead(boolean2Boolean(true))
-          //println("!!!Got one duplicates!!!")
         } else read.setDuplicateRead(boolean2Boolean(false))
 
         read
-      }}
+      }
 
       //val temp = readADAMRDD.collect()
 
