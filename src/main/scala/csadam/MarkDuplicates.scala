@@ -140,11 +140,11 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var count = 0
       var index = 0
       var totalTake = 0
-      val partSize = 200000000
+      val partSize = 100000000
       //val iteration = totalReads/partSize + 1
       val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
 
-      println("*** Start to build fragSort and pairSort for every 150 million reads! ***\n")
+      println("*** Start to build fragSort and pairSort! ***\n")
 
       while(end == 0) {
         // Collect 10 million each iteration to build fragSort and PairSort
