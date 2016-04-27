@@ -1154,7 +1154,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val t0 = System.nanoTime : Double
 
-      val conf = new SparkConf().setAppName("Mark Duplicate")
+      val conf = new SparkConf().setAppName("Mark Duplicate").setMaster("spark://10.0.1.2:7077").set("spark.driver.maxResultSize", "100G").set("spark.network.timeout", "10000s").set("spark.cores.max", "500").set("spark.eventLog.enabled", "true").set("spark.eventLog.dir", "hdfs://cdsc0:9000/user/qzhao/eventLogs").set("spark.driver.host", "10.0.1.100").set("spark.driver.cores", "20")
       val sc = new SparkContext(conf)
       val ac = new ADAMContext(sc)
       val readsRDD: RDD[AlignmentRecord] = ac.loadAlignments(input)
