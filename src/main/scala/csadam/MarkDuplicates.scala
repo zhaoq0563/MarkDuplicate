@@ -1155,12 +1155,9 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val t0 = System.nanoTime : Double
 
       val conf = new SparkConf().setAppName("CS-MarkDuplicate")
-      conf.setMaster("spark://10.0.1.2:7077")
       conf.set("spark.driver.maxResultSize", "100G")
       conf.set("spark.network.timeout", "5000s")
       conf.set("spark.cores.max", "500")
-      conf.set("spark.eventLog.enabled", "true")
-      conf.set("spark.eventLog.dir", "hdfs://cdsc0:9000/user/qzhao/eventLogs")
       conf.set("spark.driver.host", "10.0.1.100")
       conf.set("spark.driver.cores", "20")
       val sc = new SparkContext(conf)
