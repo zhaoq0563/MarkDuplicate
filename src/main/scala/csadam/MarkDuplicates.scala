@@ -140,7 +140,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       var count = 0
       var index = 0
       var totalTake = 0
-      val partSize = 250000000
+      val partSize = 300000000
       //val iteration = totalReads/partSize + 1
       val tmp = new DiskBasedReadEndsForMarkDuplicatesMap(MAX_NUMBER_FOR_READ_MAP)
 
