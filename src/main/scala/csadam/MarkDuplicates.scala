@@ -11,7 +11,7 @@
 package main.scala.csadam
 
 import java.util.{Calendar, Comparator, ArrayList}
-import java.io.File
+import java.io.{File, BufferedWriter, FileWriter}
 import cs.ucla.edu.bwaspark.datatype.{BNTSeqType, BWAIdxType}
 import cs.ucla.edu.bwaspark.sam.SAMHeader
 import main.scala.csadam.util.CSAlignmentRecord
@@ -232,6 +232,17 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       pairSort.doneAdding()
 
       println("*** Finish building pairSort and fragSort! ***\n")
+
+      // Write two sorts to files
+      val pw = new BufferedWriter(new FileWriter(new File("/curr/qzhao/logs/intermediate/csmarkduplicate.txt")))
+
+      val it = pairSort.iterator()
+      while (it.hasNext) {
+        val pair = it.next()
+        pw.append("Read1RefIndex: " + pair.read1ReferenceIndex.toString + "\tRead1Coordinate: " + pair.read1Coordinate.toString + "\tRead1IndexinFile: " + pair.read1IndexInFile.toString + "\tRead2RefIndex: " + pair.read2ReferenceIndex.toString + "\tRead2Coordinate: " + pair.read2Coordinate.toString + "\tRead2IndexinFile: " + pair.read2IndexInFile.toString + "\tOrientation: " + pair.orientation.toString + "\tOrientationForOpt: " + pair.orientationForOpticalDuplicates.toString + "\tScore: " + pair.score.toString + "\tLibraryID: " + pair.libraryId.toString + "\tReadGroup: " + pair.getReadGroup.toString).write("\n")
+      }
+      pw.flush
+      pw.close
     }
 
     def buildCSAlignmentRecord(read : AlignmentRecord, index : Long, header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator) : CSAlignmentRecord = {
@@ -663,7 +674,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       buildSortList(input, readsRDD, bns_bc, samFileHeader, libraryIdGenerator, sc)
       // @ Need to be done
-      generateDupIndexes(libraryIdGenerator) // Passing bwaIdx_bc and access it on workers instead of creating a new one here
+      /*generateDupIndexes(libraryIdGenerator) // Passing bwaIdx_bc and access it on workers instead of creating a new one here
       writeToADAM(output, readsRDD, sc)
 
       // @ Need to be done
@@ -673,6 +684,6 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       val t1 = System.nanoTime() : Double
 
       println("*** Mark duplicate has been successfully done! ***\n")
-      println("*** The total time for Mark Duplicate is : " + (t1-t0) / 1000000000.0 + " secs.\n")
+      println("*** The total time for Mark Duplicate is : " + (t1-t0) / 1000000000.0 + " secs.\n")*/
     }
 }
