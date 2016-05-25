@@ -234,7 +234,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       println("*** Finish building pairSort and fragSort! ***\n")
 
       // Write two sorts to files
-      val pw = new BufferedWriter(new FileWriter(new File("/curr/qzhao/logs/intermediate/csmarkduplicate.txt")))
+      val pw = new BufferedWriter(new FileWriter(new File("/curr/qzhao/logs/intermediate/csmarkduplicate_huang.txt")))
 
       val it = pairSort.iterator()
       while (it.hasNext) {
