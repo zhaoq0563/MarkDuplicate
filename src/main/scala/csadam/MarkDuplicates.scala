@@ -47,6 +47,57 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       finish
     }
 
+    def buildTwoSort() = {
+      val srcp = scala.io.Source.fromFile("/curr/qzhao/logs/intermediate/picardmarkduplicate_pairsort.txt")
+      val iterp = srcp.getLines()
+      while(iterp.hasNext)
+      {
+        val readInfo = iterp.next().split(" ")
+        val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
+        ends.read1IndexInFile = readInfo(5).toLong
+        ends.read2IndexInFile = readInfo(11).toLong
+        ends.score = readInfo(17).toShort
+        ends.read1Coordinate = readInfo(3).toInt
+        ends.read2Coordinate = readInfo(9).toInt
+        ends.read1ReferenceIndex = readInfo(1).toInt
+        ends.read2ReferenceIndex = readInfo(7).toInt
+        ends.readGroup = readInfo(21).toShort
+        ends.libraryId = readInfo(19).toShort
+        ends.orientation = readInfo(13).toByte
+        ends.orientationForOpticalDuplicates = readInfo(15).toByte
+        ends.tile = readInfo(23).toShort
+        ends.x = readInfo(25).toShort
+        ends.y = readInfo(27).toShort
+        pairSort.add(ends)
+      }
+      pairSort.doneAdding()
+
+      val srcf = scala.io.Source.fromFile("/curr/qzhao/logs/intermediate/picardmarkduplicate_fragsort.txt")
+      val iterf = srcf.getLines()
+      while(iterf.hasNext)
+      {
+        val readInfo = iterf.next().split(" ")
+        val ends: ReadEndsForMarkDuplicates = new ReadEndsForMarkDuplicates()
+        ends.read1IndexInFile = readInfo(5).toLong
+        ends.read2IndexInFile = readInfo(11).toLong
+        ends.score = readInfo(17).toShort
+        ends.read1Coordinate = readInfo(3).toInt
+        ends.read2Coordinate = readInfo(9).toInt
+        ends.read1ReferenceIndex = readInfo(1).toInt
+        ends.read2ReferenceIndex = readInfo(7).toInt
+        ends.readGroup = readInfo(21).toShort
+        ends.libraryId = readInfo(19).toShort
+        ends.orientation = readInfo(13).toByte
+        ends.orientationForOpticalDuplicates = readInfo(15).toByte
+        ends.tile = readInfo(23).toShort
+        ends.x = readInfo(25).toShort
+        ends.y = readInfo(27).toShort
+        fragSort.add(ends)
+      }
+      fragSort.doneAdding()
+
+    }
+
     // Transform the rdd in ADAM format to our self customized format to build pair/frag Sort list
     def buildSortList(input : String, readsrdd : RDD[AlignmentRecord], bns_bc : Broadcast[BNTSeqType], header : SAMFileHeader, libraryIdGenerator : LibraryIdGenerator, sc : SparkContext) = {
       println("*** Start to process the ADAM file to collect the information of all the reads into variables! ***\n")
@@ -649,12 +700,14 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
 
       val t0 = System.nanoTime : Double
 
+      /*
       val conf = new SparkConf().setAppName("CS-MarkDuplicate").setMaster("spark://10.0.1.2:7077").set("spark.driver.maxResultSize", "100G").set("spark.network.timeout", "5000s").set("spark.cores.max", "500").set("spark.cleaner.ttl", "43200")
       val sc = new SparkContext(conf)
       val ac = new ADAMContext(sc)
       val readsRDD: RDD[AlignmentRecord] = ac.loadAlignments(input)
 
       println("*** The alignments are loaded successfully! ***\n")
+      */
 
       // Load bwaIdx in master node
       val bwaIdx = new BWAIdxType
@@ -662,7 +715,7 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       bwaIdx.load(fastaLocalInputPath, 0)
 
       // Boardcast the bns
-      val bns_bc : Broadcast[BNTSeqType] = sc.broadcast(bwaIdx.bns)
+      //// val bns_bc : Broadcast[BNTSeqType] = sc.broadcast(bwaIdx.bns)
 
       val samHeader = new SAMHeader
       val samFileHeader = new SAMFileHeader
@@ -672,18 +725,17 @@ object MarkDuplicates extends AbstractMarkDuplicatesCommandLineProgram {
       samHeader.bwaGenSAMHeader(bwaIdx.bns, packageVersion, readGroupString, samFileHeader)
       val libraryIdGenerator = new LibraryIdGenerator(samFileHeader)
 
-      buildSortList(input, readsRDD, bns_bc, samFileHeader, libraryIdGenerator, sc)
-      // @ Need to be done
-      /*generateDupIndexes(libraryIdGenerator) // Passing bwaIdx_bc and access it on workers instead of creating a new one here
-      writeToADAM(output, readsRDD, sc)
+      ////buildSortList(input, readsRDD, bns_bc, samFileHeader, libraryIdGenerator, sc)
+      buildTwoSort()
+      generateDupIndexes(libraryIdGenerator) // Passing bwaIdx_bc and access it on workers instead of creating a new one here
+      ////writeToADAM(output, readsRDD, sc)
 
-      // @ Need to be done
       val numOpticalDuplicates = libraryIdGenerator.getOpticalDuplicatesByLibraryIdMap.getSumOfValues.toLong
       println("*** The number of optical duplicates are : " + numOpticalDuplicates + " !***\n")
 
       val t1 = System.nanoTime() : Double
 
       println("*** Mark duplicate has been successfully done! ***\n")
-      println("*** The total time for Mark Duplicate is : " + (t1-t0) / 1000000000.0 + " secs.\n")*/
+      println("*** The total time for Mark Duplicate is : " + (t1-t0) / 1000000000.0 + " secs.\n")
     }
 }
